@@ -49,7 +49,6 @@ def epsilon_greedy(t, Q, epsilon=0.2, N=None):
         return np.argmax(Q)
     else:
         return np.random.randint(arm_count)
-    pass
 
 def ucb(c):
     return 0
