@@ -19,10 +19,11 @@ class Agent:
         self.Q = np.zeros(arm_count)
         self.action = 0
         self.t = 0
+        self.N = 100
         
     def select_action(self, state, reward):
-        def greedy(N):
-            if (self.t > N):
+        def greedy():
+            if (self.t > self.N):
                 self.action = np.argmax(self.Q)
             else:
                 self.action = np.random.randint(arm_count)
@@ -37,7 +38,7 @@ class Agent:
             pass
         
         self.Q[self.action] += reward
-        greedy(100)
+        greedy()
         self.t += 1
 
 
