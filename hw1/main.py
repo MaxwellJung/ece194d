@@ -2,6 +2,8 @@ import numpy as np
 
 arm_count = 10
 
+def softmax(x):
+    return np.exp(x)/sum(np.exp(x))
 class Environment:
     def __init__(self) -> None:
         self.reward = None
@@ -13,12 +15,15 @@ class Environment:
         self.reward = pull_arm()
 class Agent:
     def __init__(self) -> None:
-        self.t = 0
-        self.total_reward = 0
-        self.N = np.zeros(arm_count)
-        self.Q = np.zeros(arm_count)
         self.policy = self.greedy
         self.action = None
+        self.t = 0
+        self.total_reward = 0
+        self.average_reward = None
+        self.N = np.zeros(arm_count)
+        self.Q = np.zeros(arm_count)
+        self.H = np.zeros(arm_count)
+        self.alpha = None
 
     def set_policy(self, policy):
         self.policy = policy
@@ -39,8 +44,9 @@ class Agent:
     def ucb(self, c=3):
         return np.argmax(self.Q + c*np.sqrt(np.log(self.t+1)/(self.N+1)))
 
-    def gradient(self, a):
-        return 0
+    def gradient(self, a=0.1):
+        self.alpha = a
+        return np.random.choice(arm_count, p=softmax(self.H))
         
     def select_action(self):
         self.action = self.policy()
@@ -48,13 +54,20 @@ class Agent:
         self.t += 1
         
     def accept_reward(self, reward):
+        def update_H(a):
+            if a == self.action:
+                return self.H[a] + self.alpha*(reward-self.average_reward)*(1-softmax(self.H)[a])
+            else:
+                return self.H[a] - self.alpha*(reward-self.average_reward)*(softmax(self.H)[a])
         self.total_reward += reward
+        self.average_reward = self.total_reward/self.t
         self.Q[self.action] = (self.N[self.action]-1)/(self.N[self.action])*self.Q[self.action] + (1/self.N[self.action])*reward
+        self.H = np.vectorize(update_H)(np.arange(arm_count))
 
 def main():
     env = Environment()
     bandit = Agent()
-    bandit.set_policy(bandit.ucb)
+    bandit.set_policy(bandit.gradient)
     time_horizon = 1000
     
     for t in range(time_horizon):
