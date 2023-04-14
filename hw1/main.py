@@ -5,17 +5,15 @@ import copy
 
 arm_count = 10
 class Environment:
-    def __init__(self) -> None:
+    def __init__(self, mean) -> None:
         self.reward = None
-        self.mean = np.random.normal(loc=0, scale=1, size=arm_count)
-        
-    def reset(self):
-        self.reward = None
+        self.mean = mean
     
     def generate_reward(self, action):
         def pull_arm():
             return np.random.normal(loc=self.mean[action], scale=1)
         self.reward = pull_arm()
+        
 class Agent:
     def __init__(self) -> None:
         self.action = None
@@ -38,7 +36,16 @@ class Agent:
         self.H = np.zeros(arm_count)
 
     def set_policy(self, policy, hyperparam):
-        self.policy = policy
+        if policy == 'greedy':
+            self.policy = self.greedy
+        elif policy == 'epsilon-greedy':
+            self.policy = self.epsilon_greedy
+        elif policy == 'UCB':
+            self.policy = self.ucb
+        elif policy == 'gradient':
+            self.policy = self.gradient
+        else:
+            self.policy = None
         self.hyperparam = hyperparam
         
     def greedy(self):
@@ -73,47 +80,40 @@ class Agent:
                 return self.H[a] - self.hyperparam*(reward-self.average_reward)*(softmax(self.H)[a])
         self.total_reward += reward
         self.average_reward = self.total_reward/self.t
-        self.Q[self.action] = (self.N[self.action]-1)/(self.N[self.action])*self.Q[self.action] + (1/self.N[self.action])*reward
+        self.Q[self.action] = ((self.N[self.action]-1)*self.Q[self.action]+reward)/(self.N[self.action])
         self.H = np.vectorize(update_H)(np.arange(arm_count))
         
-def simulate(agent: Agent, env: Environment, time_horizon=1000):
-    agent.reset()
-    env.reset()
+def simulate(mean, policy, hyperparam, time_horizon=1000):
+    agent = Agent()
+    env = Environment(mean)
+    agent.set_policy(policy, hyperparam)
     for t in range(time_horizon):
         agent.select_action()
         env.generate_reward(action=agent.action)
         agent.accept_reward(reward=env.reward)
         
-    return np.max(env.mean)*agent.t - agent.total_reward
+    return np.max(env.mean)*agent.t - agent.total_reward # regret
 
 def main():
     sample_size = 30
-    agent = Agent()
-    env = Environment()
+    mean = np.random.normal(loc=0, scale=1, size=arm_count)
     
-    thresholds = np.arange(start=arm_count, stop=100)
-    widths = np.linspace(start=0.01, stop=10, num=100)
-    epsilons = alphas = np.linspace(start=0, stop=1, num=100)
+    thresholds = np.arange(start=arm_count, stop=500)
+    epsilons = np.arange(start=0, stop=1, step=0.01)
+    widths = np.arange(start=0, stop=10, step=0.01)
+    alphas = np.arange(start=0, stop=3, step=0.01)
     
-    def test_greedy(N):
-        agent.set_policy(agent.greedy, hyperparam=N)
-        performance = np.mean(np.fromfunction(lambda i: simulate(copy.deepcopy(agent), copy.deepcopy(env)), (sample_size,)))
-        return performance
+    def test_greedy(n):
+        return np.mean(np.fromfunction(lambda i: simulate(mean, 'greedy', n), (sample_size,)))
     
     def test_epsilon_greedy(e):
-        agent.set_policy(agent.epsilon_greedy, hyperparam=e)
-        performance = np.mean(np.fromfunction(lambda i: simulate(copy.deepcopy(agent), copy.deepcopy(env)), (sample_size,)))
-        return performance
+        return np.mean(np.fromfunction(lambda i: simulate(mean, 'epsilon-greedy', e), (sample_size,)))
     
     def test_UCB(c):
-        agent.set_policy(agent.ucb, hyperparam=c)
-        performance = np.mean(np.fromfunction(lambda i: simulate(copy.deepcopy(agent), copy.deepcopy(env)), (sample_size,)))
-        return performance
+        return np.mean(np.fromfunction(lambda i: simulate(mean, 'UCB', c), (sample_size,)))
     
     def test_gradient(a):
-        agent.set_policy(agent.gradient, hyperparam=a)
-        performance = np.mean(np.fromfunction(lambda i: simulate(copy.deepcopy(agent), copy.deepcopy(env)), (sample_size,)))
-        return performance
+        return np.mean(np.fromfunction(lambda i: simulate(mean, 'gradient', a), (sample_size,)))
 
     print(f'Testing Greedy')
     greedy_performances = np.vectorize(test_greedy)(thresholds)
