@@ -1,11 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.special import softmax 
 import copy
 
 arm_count = 10
-
-def softmax(x):
-    return np.exp(x)/sum(np.exp(x))
 class Environment:
     def __init__(self) -> None:
         self.reward = None
@@ -39,9 +37,9 @@ class Agent:
         self.Q = np.zeros(arm_count)
         self.H = np.zeros(arm_count)
 
-    def set_policy(self, policy, hyper_param):
+    def set_policy(self, policy, hyperparam):
         self.policy = policy
-        self.hyperparam = hyper_param
+        self.hyperparam = hyperparam
         
     def greedy(self):
         if (self.t > self.hyperparam):
@@ -93,31 +91,57 @@ def main():
     agent = Agent()
     env = Environment()
     
-    epsilons = alphas = np.arange(0, 1, 0.01)
+    thresholds = np.arange(start=arm_count, stop=100)
+    widths = np.linspace(start=0.01, stop=10, num=100)
+    epsilons = alphas = np.linspace(start=0, stop=1, num=100)
+    
+    def test_greedy(N):
+        agent.set_policy(agent.greedy, hyperparam=N)
+        performance = np.mean(np.fromfunction(lambda i: simulate(copy.deepcopy(agent), copy.deepcopy(env)), (sample_size,)))
+        return performance
     
     def test_epsilon_greedy(e):
-        agent.set_policy(agent.epsilon_greedy, hyper_param=e)
+        agent.set_policy(agent.epsilon_greedy, hyperparam=e)
+        performance = np.mean(np.fromfunction(lambda i: simulate(copy.deepcopy(agent), copy.deepcopy(env)), (sample_size,)))
+        return performance
+    
+    def test_UCB(c):
+        agent.set_policy(agent.ucb, hyperparam=c)
         performance = np.mean(np.fromfunction(lambda i: simulate(copy.deepcopy(agent), copy.deepcopy(env)), (sample_size,)))
         return performance
     
     def test_gradient(a):
-        agent.set_policy(agent.gradient, hyper_param=a)
+        agent.set_policy(agent.gradient, hyperparam=a)
         performance = np.mean(np.fromfunction(lambda i: simulate(copy.deepcopy(agent), copy.deepcopy(env)), (sample_size,)))
         return performance
-    
-    print(f'Testing epsilon greedy')
+
+    print(f'Testing Greedy')
+    greedy_performances = np.vectorize(test_greedy)(thresholds)
+    print(f'Testing Epsilon Greedy')
     e_greedy_performances = np.vectorize(test_epsilon_greedy)(epsilons)
-    print(f'Testing gradient')
+    print(f'Testing Upper Confidence Bound')
+    UCB_performances = np.vectorize(test_UCB)(widths)
+    print(f'Testing Gradient')
     gradient_performances = np.vectorize(test_gradient)(alphas)
     
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
+    ax1.plot(thresholds, greedy_performances)
+    ax1.set(xlabel='parameter (N)', ylabel='performance',
+        title='greedy plot')
+    ax1.grid()
+    
     ax2.plot(epsilons, e_greedy_performances)
-    ax2.set(xlabel='parameter (epsilon)', ylabel='performance',
+    ax2.set(xlabel='parameter (e)', ylabel='performance',
         title='epsilon greedy plot')
     ax2.grid()
     
+    ax3.plot(widths, UCB_performances)
+    ax3.set(xlabel='parameter (c)', ylabel='performance',
+        title='UCB plot')
+    ax3.grid()
+    
     ax4.plot(alphas, gradient_performances)
-    ax4.set(xlabel='parameter (alpha)', ylabel='performance',
+    ax4.set(xlabel='parameter (a)', ylabel='performance',
         title='gradient plot')
     ax4.grid()
     
