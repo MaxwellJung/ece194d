@@ -92,7 +92,7 @@ def simulate(mean, policy, hyperparam, time_horizon=1000):
         env.generate_reward(action=agent.action)
         agent.accept_reward(reward=env.reward)
         
-    return np.max(env.mean)*agent.t - agent.total_reward # regret
+    return np.max(env.mean) - agent.total_reward/agent.t # regret
 
 def main():
     sample_size = 30
