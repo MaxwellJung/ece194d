@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import copy
 
@@ -19,7 +20,6 @@ class Environment:
         self.reward = pull_arm()
 class Agent:
     def __init__(self) -> None:
-        self.policy = self.greedy
         self.action = None
         self.t = 0
         self.total_reward = 0
@@ -27,6 +27,7 @@ class Agent:
         self.N = np.zeros(arm_count)
         self.Q = np.zeros(arm_count)
         self.H = np.zeros(arm_count)
+        self.policy = None
         self.hyperparam = None
         
     def reset(self):
@@ -37,7 +38,6 @@ class Agent:
         self.N = np.zeros(arm_count)
         self.Q = np.zeros(arm_count)
         self.H = np.zeros(arm_count)
-        self.hyperparam = None
 
     def set_policy(self, policy, hyper_param):
         self.policy = policy
@@ -79,35 +79,49 @@ class Agent:
         self.H = np.vectorize(update_H)(np.arange(arm_count))
         
 def simulate(agent: Agent, env: Environment, time_horizon=1000):
+    agent.reset()
+    env.reset()
     for t in range(time_horizon):
         agent.select_action()
         env.generate_reward(action=agent.action)
         agent.accept_reward(reward=env.reward)
         
-def evaluate(agent: Agent, env: Environment, policy, hyperparam):
-    agent.set_policy(policy, hyperparam)
-    simulate(agent, env)
     return np.max(env.mean)*agent.t - agent.total_reward
 
-def test_epsilon_greedy(agent: Agent, env: Environment, e=0.1):
-    agent.reset()
-    env.reset()
-    return evaluate(agent, env, agent.epsilon_greedy, hyperparam=e)
-
-def test_gradient(agent: Agent, env: Environment, a=0.1):
-    agent.reset()
-    env.reset()
-    return evaluate(agent, env, agent.gradient, hyperparam=a)
-    
 def main():
     sample_size = 30
     agent = Agent()
     env = Environment()
     
-    for x in range(1, 100):
-        hyperparam = e = x/100
-        score = np.mean(np.fromfunction(lambda i: test_epsilon_greedy(copy.deepcopy(agent), copy.deepcopy(env), hyperparam), (sample_size,)))
-        print(f'hyperparam: {hyperparam}, score: {score}')
-        
+    epsilons = alphas = np.arange(0, 1, 0.01)
+    
+    def test_epsilon_greedy(e):
+        agent.set_policy(agent.epsilon_greedy, hyper_param=e)
+        performance = np.mean(np.fromfunction(lambda i: simulate(copy.deepcopy(agent), copy.deepcopy(env)), (sample_size,)))
+        return performance
+    
+    def test_gradient(a):
+        agent.set_policy(agent.gradient, hyper_param=a)
+        performance = np.mean(np.fromfunction(lambda i: simulate(copy.deepcopy(agent), copy.deepcopy(env)), (sample_size,)))
+        return performance
+    
+    print(f'Testing epsilon greedy')
+    e_greedy_performances = np.vectorize(test_epsilon_greedy)(epsilons)
+    print(f'Testing gradient')
+    gradient_performances = np.vectorize(test_gradient)(alphas)
+    
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
+    ax2.plot(epsilons, e_greedy_performances)
+    ax2.set(xlabel='parameter (epsilon)', ylabel='performance',
+        title='epsilon greedy plot')
+    ax2.grid()
+    
+    ax4.plot(alphas, gradient_performances)
+    ax4.set(xlabel='parameter (alpha)', ylabel='performance',
+        title='gradient plot')
+    ax4.grid()
+    
+    plt.show()
+    
 if __name__ == '__main__':
     main()
