@@ -124,7 +124,7 @@ def main():
     print(f'Testing Gradient')
     gradient_performances = np.vectorize(test_gradient)(alphas)
     
-    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, layout="constrained")
     ax1.plot(thresholds, greedy_performances)
     ax1.set(xlabel='parameter (N)', ylabel='performance',
         title='greedy plot')
