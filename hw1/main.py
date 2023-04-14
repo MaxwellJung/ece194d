@@ -126,22 +126,22 @@ def main():
     
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, layout="constrained")
     ax1.plot(thresholds, greedy_performances)
-    ax1.set(xlabel='parameter (N)', ylabel='performance',
+    ax1.set(xlabel='parameter (N)', ylabel='regret',
         title='greedy plot')
     ax1.grid()
     
     ax2.plot(epsilons, e_greedy_performances)
-    ax2.set(xlabel='parameter (e)', ylabel='performance',
+    ax2.set(xlabel='parameter (e)', ylabel='regret',
         title='epsilon greedy plot')
     ax2.grid()
     
     ax3.plot(widths, UCB_performances)
-    ax3.set(xlabel='parameter (c)', ylabel='performance',
+    ax3.set(xlabel='parameter (c)', ylabel='regret',
         title='UCB plot')
     ax3.grid()
     
     ax4.plot(alphas, gradient_performances)
-    ax4.set(xlabel='parameter (a)', ylabel='performance',
+    ax4.set(xlabel='parameter (a)', ylabel='regret',
         title='gradient plot')
     ax4.grid()
     
