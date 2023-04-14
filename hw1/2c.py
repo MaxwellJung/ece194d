@@ -87,63 +87,35 @@ def simulate(mean, policy, hyperparam, time_horizon=1000):
     agent = Agent()
     env = Environment(mean)
     agent.set_policy(policy, hyperparam)
+    regret_history = []
     for t in range(time_horizon):
         agent.select_action()
         env.generate_reward(action=agent.action)
         agent.accept_reward(reward=env.reward)
+        regret = np.max(env.mean) - agent.average_reward
+        regret_history.append(regret)
         
-    return np.max(env.mean) - agent.total_reward/agent.t # regret
+    return np.array(regret_history)
 
 def main():
     sample_size = 30
     mean = np.random.normal(loc=0, scale=1, size=arm_count)
     
-    thresholds = np.arange(start=arm_count, stop=500)
-    epsilons = np.arange(start=0, stop=1, step=0.01)
-    widths = np.arange(start=0, stop=10, step=0.01)
-    alphas = np.arange(start=0, stop=3, step=0.01)
     
-    def test_greedy(n):
-        return np.mean(np.fromfunction(lambda i: simulate(mean, 'greedy', n), (sample_size,)))
+    print(f'Benchmarking Upper Confidence Bound')
+    UCB_benchmark = np.mean(np.array([simulate(mean, 'UCB', 0.7) for i in range(sample_size)]), axis=0)
+    print(f'Benchmarking Gradient')
+    gradient_performances = np.mean(np.array([simulate(mean, 'gradient', 0.1) for i in range(sample_size)]), axis=0)
     
-    def test_epsilon_greedy(e):
-        return np.mean(np.fromfunction(lambda i: simulate(mean, 'epsilon-greedy', e), (sample_size,)))
+    X = np.arange(1000)
     
-    def test_UCB(c):
-        return np.mean(np.fromfunction(lambda i: simulate(mean, 'UCB', c), (sample_size,)))
+    plt.plot(X, UCB_benchmark, color='r', label='UCB')
+    plt.plot(X, gradient_performances, color='g', label='gradient')
     
-    def test_gradient(a):
-        return np.mean(np.fromfunction(lambda i: simulate(mean, 'gradient', a), (sample_size,)))
-
-    print(f'Testing Greedy')
-    greedy_performances = np.vectorize(test_greedy)(thresholds)
-    print(f'Testing Epsilon Greedy')
-    e_greedy_performances = np.vectorize(test_epsilon_greedy)(epsilons)
-    print(f'Testing Upper Confidence Bound')
-    UCB_performances = np.vectorize(test_UCB)(widths)
-    print(f'Testing Gradient')
-    gradient_performances = np.vectorize(test_gradient)(alphas)
-    
-    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, layout="constrained")
-    ax1.plot(thresholds, greedy_performances)
-    ax1.set(xlabel='parameter (N)', ylabel='regret',
-        title='greedy plot')
-    ax1.grid()
-    
-    ax2.plot(epsilons, e_greedy_performances)
-    ax2.set(xlabel='parameter (e)', ylabel='regret',
-        title='epsilon greedy plot')
-    ax2.grid()
-    
-    ax3.plot(widths, UCB_performances)
-    ax3.set(xlabel='parameter (c)', ylabel='regret',
-        title='UCB plot')
-    ax3.grid()
-    
-    ax4.plot(alphas, gradient_performances)
-    ax4.set(xlabel='parameter (a)', ylabel='regret',
-        title='gradient plot')
-    ax4.grid()
+    plt.xlabel("Time (t)")
+    plt.ylabel("Regret")
+    plt.title("UCB vs gradient policy")
+    plt.legend()
     
     plt.show()
     
