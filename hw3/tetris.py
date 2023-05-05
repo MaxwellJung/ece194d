@@ -77,6 +77,7 @@ class Tetris:
         
     def start_interactive_play(self):
         while not self.game_over:
+            print(f'{self.score = }')
             print(self.board)
             print(self.current_piece)
             try:
