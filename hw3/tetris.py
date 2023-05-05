@@ -67,26 +67,29 @@ class Tetris:
             incomplete_rows = np.invert(complete_rows)
             cleaned_board = self.board[incomplete_rows]
             self.board = np.pad(cleaned_board, ((board_height-cleaned_board.shape[0],0),(0,0)))
-            self.score += points
+            return points
         
         drop_piece()
-        clear_complete_rows()
+        points = clear_complete_rows()
         
         above_line = self.board[:-self.line_height]
         if np.any(above_line): raise self.gameOverException
+        return points
         
     def start_interactive_play(self):
         while not self.game_over:
-            print(f'{self.score = }')
+            print(f'Score: {self.score}')
             print(self.board)
             print(self.current_piece)
             try:
-                self.place_piece(orientation=int(input('orientation:')), location=int(input('location:')))
+                points = self.place_piece(orientation=int(input('orientation:')), location=int(input('location:')))
             except self.illegalMoveException:
                 print(f'Invalid orientation/location. Try again.')
             except self.gameOverException:
                 self.game_over = True
                 print(self.board)
                 print(f'Game Over!')
+                print(f'Final Score: {self.score}')
             else:
+                self.score += points
                 self.current_piece = self.select_next_piece()
