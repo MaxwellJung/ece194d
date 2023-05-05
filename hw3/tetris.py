@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 class Tetris:
     piece1 = np.array([[0, 1],
@@ -7,17 +8,22 @@ class Tetris:
                        [1, 1, 0]])
     piece3 = np.array([[1],
                        [1]])
+    
     all_pieces = [piece1, piece2, piece3]
     
-    @classmethod
-    def select_piece(cls, i, zero_indexed=False):
-        if zero_indexed:
-            return cls.all_pieces[i]
-        return cls.all_pieces[i-1]
+    def __init__(self, width=3, height=3, starting_piece=None):
+        self.board_width = width
+        self.board_height = height
+        self.board = np.zeros(shape=(height,width))
+        self.current_piece = self.select_next_piece(i=starting_piece, zero_indexed=True)
     
-    def __init__(self, starting_piece):
-        self.board = np.zeros(shape=(3,3))
-        self.current_piece = self.select_piece(starting_piece)
+    @classmethod
+    def select_next_piece(cls, i=None, zero_indexed=True):
+        if i is None:
+            return random.choice(cls.all_pieces)
+        if not zero_indexed:
+            return cls.all_pieces[i-1]
+        return cls.all_pieces[i]
     
     class invalidMoveException(Exception):
         pass
@@ -26,24 +32,40 @@ class Tetris:
         pass
     
     def place_piece(self, orientation=0, location=0):
-        def drop(piece: np.ndarray, subboard: np.ndarray):
-            if piece.shape[1] != subboard.shape[1]:
+        def drop(piece: np.ndarray):
+            piece_height = piece.shape[0]
+            piece_width = piece.shape[1]
+            pad_left = location
+            pad_right = self.board_width-pad_left-piece_width
+            try:
+                piece_buffer = np.pad(piece, ((0,self.board_height),(pad_left,pad_right)))
+            except ValueError:
                 raise self.invalidMoveException
             
-            for h in range(self.board.shape[0], -1, -1):
-                drop_one_block = (np.pad(piece, ((self.board.shape[0]-h,h),(0,0)))) + (np.pad(subboard, ((piece.shape[0],0),(0,0))))
-                if np.any((drop_one_block>1)):
-                    break
-                valid = drop_one_block
+            for h in range(self.board_height+1):
+                drop_one_block = piece_buffer + (np.pad(self.board, ((piece_height,0),(0,0))))
                 
-            if np.any(valid[:-self.board.shape[1]]):
-                raise self.gameOverException
-            
-            return valid[-self.board.shape[1]:, :]
+                collision = drop_one_block>1
+                if np.any(collision):
+                    break
+                lowest_drop = drop_one_block
+                piece_buffer = np.roll(piece_buffer, shift=1, axis=0)
+                
+            return lowest_drop
+        
+        def clear_complete_rows(board: np.ndarray):
+            complete_rows = np.all(board, axis=1)
+            points = np.sum(complete_rows)
+            incomplete_rows = np.invert(complete_rows)
+            new_board = np.pad(board[incomplete_rows], ((board.shape[0]-board[incomplete_rows].shape[0],0),(0,0)))
+            return new_board, points
         
         rotated_piece = np.rot90(self.current_piece, orientation)
-        piece_width = rotated_piece.shape[1]
-        d = drop(rotated_piece, self.board[:, location:location+piece_width])
-        self.board[:, location:location+piece_width] = d
+        b = drop(rotated_piece)
+        b, reward = clear_complete_rows(b)
         
-        print(self.board)
+        above_line = b[:-self.board_height]
+        if np.any(above_line):
+            raise self.gameOverException
+        
+        self.board = b[-self.board_height:]

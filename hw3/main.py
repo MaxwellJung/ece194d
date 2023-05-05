@@ -2,16 +2,20 @@ from reinforcement_learning import Simulation
 from tetris import Tetris
 
 def main():
-    t = Tetris(starting_piece=1)
-    try:
-        t.place_piece(orientation=0, location=0)
-        t.current_piece = t.select_piece(3)
-        t.place_piece(orientation=0, location=2)
-        t.place_piece(orientation=1, location=2)
-    except Tetris.invalidMoveException:
-        print(f'invalid move')
-    except Tetris.gameOverException:
-        print(f'game over')
+    t = Tetris(starting_piece=0)
+    while True:
+        try:
+            print(t.board)
+            print(t.current_piece)
+            t.place_piece(orientation=int(input('orientation:')), location=int(input('location:')))
+        except Tetris.invalidMoveException:
+            print(f'invalid move')
+            continue
+        except Tetris.gameOverException:
+            print(f'game over')
+            break
+        else:
+            t.current_piece = t.select_next_piece()
 
 if __name__ == '__main__':
     main()
