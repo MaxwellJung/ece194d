@@ -5,7 +5,7 @@ def main():
     t = Tetris(starting_piece=1)
     try:
         t.place_piece(orientation=0, location=0)
-        t.set_next_piece(3)
+        t.current_piece = t.select_piece(3)
         t.place_piece(orientation=0, location=2)
         t.place_piece(orientation=1, location=2)
     except Tetris.invalidMoveException:

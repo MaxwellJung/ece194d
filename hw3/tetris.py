@@ -47,6 +47,3 @@ class Tetris:
         self.board[:, location:location+piece_width] = d
         
         print(self.board)
-        
-    def set_next_piece(self, i, zero_indexed=False):
-        self.current_piece = self.select_piece(i, zero_indexed)
