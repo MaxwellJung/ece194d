@@ -1,31 +1,55 @@
-class Transition:
-    def __call__(self, s, a):
-        return None
+from abc import ABC, abstractmethod
+import random
 
-class Environment:
-    def _init__(self, initial_state, transition: Transition):
-        self.state = initial_state
-        self.transition = transition
-    
-    def process_action(self, a):
-        self.state = self.transition(self.state, a)
-        self.reward = 0
+class State:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
         
-class Policy:
-    def __call__(self, s):
-        a = None
-        return a
+    def __repr__(self) -> str:
+        return f'State = {self.kwargs}'
     
-class Agent:
-    def __init__(self, environment: Environment, policy: Policy):
-        self.environment = environment
-        self.policy = policy
-        
-    def choose_action(self):
-        self.action = self.policy(self.environment.state)
-        return self.action
+    def __eq__(self, other) -> bool:
+        return self.kwargs == other.kwargs
 
-class Simulation:
+class Action:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        
+    def __repr__(self) -> str:
+        return f'Action = {self.kwargs}'
+    
+    def __eq__(self, other) -> bool:
+        return self.kwargs == other.kwargs
+
+class Environment(ABC): 
+    def _init__(self):
+        self.state: State = None
+        self.reward: float = 0
+        self.all_actions: list[Action] = []
+        
+    @abstractmethod
+    def get_state(self):
+        pass
+    
+    @abstractmethod
+    def get_reward(self):
+        pass
+    
+    @abstractmethod
+    def transition(self, a: Action):
+        pass
+    
+    def __repr__(self) -> str:
+        return f'{self.state=}, {self.reward=}'
+        
+class Agent(ABC):
+    def __init__(self, environment: Environment):
+        self.environment: Environment = environment
+    
+    def policy(self) -> Action:
+        return random.choice(self.environment.all_actions)
+
+class RLModel:
     def __init__(self, environment: Environment):
         '''Initializes one environment and one agent'''
         self.environment = environment
@@ -35,8 +59,15 @@ class Simulation:
         '''Add 1 more agent to the environment'''
         self.agents.append(Agent(self.environment))
         
-    def play_all_agents(self):
-        '''play each agent in the simulation once'''
-        for agent in self.agents:
-            agent.choose_action()
-            self.environment.process_action(agent.action)
+    def generate_episode(self):
+        '''play each agent in the simulation until terminal state'''
+        episode = []
+        while True:
+            for agent in self.agents:
+                episode.append(self.environment.get_state())
+                a = agent.policy()
+                episode.append(a)
+                self.environment.transition(a)
+                episode.append(self.environment.get_reward())
+                if self.environment.get_state() == State(terminal=True):
+                    return episode

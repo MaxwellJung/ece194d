@@ -1,9 +1,11 @@
-from reinforcement_learning import Simulation
+from reinforcement_learning import RLModel
 from tetris import Tetris
 
 def main():
-    t = Tetris(starting_piece=0)
-    t.start_interactive_play()
+    tetris_RL = RLModel(Tetris())
+    episode = tetris_RL.generate_episode()
+    
+    print(episode)
     
 if __name__ == '__main__':
     main()

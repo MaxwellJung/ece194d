@@ -1,7 +1,7 @@
 import numpy as np
 import random
-
-class Tetris:
+from reinforcement_learning import Environment, Action, State
+class Tetris(Environment):
     piece1 = np.array([[0, 1],
                        [1, 1]])
     piece2 = np.array([[0, 1, 1],
@@ -11,30 +11,47 @@ class Tetris:
     
     all_pieces = [piece1, piece2, piece3]
     max_piece_height = max([max(p.shape) for p in all_pieces])
+    all_actions = [Action(orientation=o, location=l) for o in range(4) for l in range(2)]
     
-    @classmethod
-    def select_next_piece(cls, i=None, zero_indexed=True):
-        if i is None:
-            return random.choice(cls.all_pieces)
-        if not zero_indexed:
-            return cls.all_pieces[i-1]
-        return cls.all_pieces[i]
-    
-    class illegalMoveException(Exception):
-        pass
-    
-    class gameOverException(Exception):
-        pass
+    class illegalMoveException(Exception): pass
+    class gameOverException(Exception): pass
     
     def __init__(self, playable_width=3, playable_height=3, starting_piece=None):
         self.playable_area = (playable_height, playable_width)
         self.line_height = self.playable_area[0]
         self.board = np.zeros(shape=(playable_height+self.max_piece_height,playable_width))
-        self.current_piece = self.select_next_piece(i=starting_piece, zero_indexed=True)
+        self.select_next_piece(i=starting_piece, zero_indexed=True)
         self.score = 0
         self.game_over = False
+        
+    def get_state(self):
+        if self.game_over:
+            return State(terminal=True)
+        return State(board=self.board, piece=self.current_piece)
     
-    def place_piece(self, orientation=0, location=0):
+    def get_reward(self):
+        return 0
+        
+    def transition(self, a: Action):
+        try:
+            points = self.place_piece(**a.kwargs)
+        except self.illegalMoveException:
+            return
+        except self.gameOverException:
+            self.game_over = True
+            return
+        self.select_next_piece()
+        
+    def select_next_piece(self, i=None, zero_indexed=True):
+        if i is None:
+            self.current_piece = random.choice(self.all_pieces)
+            return
+        if not zero_indexed:
+            self.current_piece = self.all_pieces[i-1]
+            return
+        self.current_piece = self.all_pieces[i]
+    
+    def place_piece(self, orientation=0, location=0) -> float:
         '''Place current piece using orientation and location.'''
         piece = np.rot90(self.current_piece, orientation)
         piece_height = piece.shape[0]
@@ -93,3 +110,6 @@ class Tetris:
             else:
                 self.score += points
                 self.current_piece = self.select_next_piece()
+                
+    def __repr__(self) -> str:
+        return f'{self.board}\nscore={self.score}'
