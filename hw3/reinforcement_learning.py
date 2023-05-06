@@ -10,6 +10,9 @@ class State:
     
     def __eq__(self, other) -> bool:
         return self.kwargs == other.kwargs
+    
+    def __hash__(self) -> int:
+        return hash(str(self))
 
 class Action:
     def __init__(self, **kwargs):
@@ -20,11 +23,15 @@ class Action:
     
     def __eq__(self, other) -> bool:
         return self.kwargs == other.kwargs
+    
+    def __hash__(self) -> int:
+        return hash(str(self))
 
 class Environment(ABC): 
     def _init__(self):
         self.state: State = None
         self.reward: float = 0
+        self.all_states: list[State] = []
         self.all_actions: list[Action] = []
         
     @abstractmethod
@@ -71,3 +78,7 @@ class RLModel:
                 episode.append(self.environment.get_reward())
                 if self.environment.get_state() == State(terminal=True):
                     return episode
+                
+    def value_iteration(self):
+        values = {a: 0 for a in  self.environment.all_states}
+        print(values)

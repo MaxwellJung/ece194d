@@ -3,9 +3,7 @@ from tetris import Tetris
 
 def main():
     tetris_RL = RLModel(Tetris())
-    episode = tetris_RL.generate_episode()
-    
-    print(episode)
+    tetris_RL.value_iteration()
     
 if __name__ == '__main__':
     main()

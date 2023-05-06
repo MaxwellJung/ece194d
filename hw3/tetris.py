@@ -11,7 +11,8 @@ class Tetris(Environment):
     
     all_pieces = [piece1, piece2, piece3]
     max_piece_height = max([max(p.shape) for p in all_pieces])
-    all_actions = [Action(orientation=o, location=l) for o in range(4) for l in range(2)]
+    all_actions = [Action(orientation=o, location=l) for o in range(4) for l in range(3)]
+    all_states = []
     
     class illegalMoveException(Exception): pass
     class gameOverException(Exception): pass
