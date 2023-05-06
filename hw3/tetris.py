@@ -1,6 +1,10 @@
 import numpy as np
 import random
 from reinforcement_learning import Environment, Action, State
+
+def bin_array(num, m):
+    """Convert a positive integer num into an m-bit bit vector"""
+    return np.array(list(np.binary_repr(num).zfill(m))).astype(np.float_)
 class Tetris(Environment):
     piece1 = np.array([[0, 1],
                        [1, 1]])
@@ -11,27 +15,35 @@ class Tetris(Environment):
     
     all_pieces = [piece1, piece2, piece3]
     max_piece_height = max([max(p.shape) for p in all_pieces])
-    all_actions = [Action(orientation=o, location=l) for o in range(4) for l in range(3)]
-    all_states = []
     
     class illegalMoveException(Exception): pass
     class gameOverException(Exception): pass
     
-    def __init__(self, playable_width=3, playable_height=3, starting_piece=None):
-        self.playable_area = (playable_height, playable_width)
+    def __init__(self, width=3, height=3, starting_piece=None):
+        self.playable_area = (height, width)
         self.line_height = self.playable_area[0]
-        self.board = np.zeros(shape=(playable_height+self.max_piece_height,playable_width))
+        self.board = np.zeros(shape=(height+self.max_piece_height,width))
         self.select_next_piece(i=starting_piece, zero_indexed=True)
-        self.score = 0
-        self.game_over = False
         
+        self.all_boards = [np.pad(bin_array(i, width*height).reshape(self.playable_area), ((self.max_piece_height,0),(0,0))) for i in range(2**(width*height))]
+        self.all_states = [State(board=b, piece=p) for b in self.all_boards for p in self.all_pieces]
+        self.all_actions = [Action(orientation=o, location=l) for o in range(4) for l in range(width)]
+        
+        self.score = 0
+        self.reward = 0
+        self.game_over = False
+    
+    def set_state(self, s: State):
+        self.board = s.kwargs['board']
+        self.current_piece = s.kwargs['piece']
+    
     def get_state(self):
         if self.game_over:
             return State(terminal=True)
         return State(board=self.board, piece=self.current_piece)
     
     def get_reward(self):
-        return 0
+        return self.reward
         
     def transition(self, a: Action):
         try:
@@ -39,8 +51,10 @@ class Tetris(Environment):
         except self.illegalMoveException:
             return
         except self.gameOverException:
+            # self.reward = -100
             self.game_over = True
             return
+        self.reward = points
         self.select_next_piece()
         
     def select_next_piece(self, i=None, zero_indexed=True):
@@ -53,7 +67,8 @@ class Tetris(Environment):
         self.current_piece = self.all_pieces[i]
     
     def place_piece(self, orientation=0, location=0) -> float:
-        '''Place current piece using orientation and location.'''
+        '''Place current piece using orientation and location.
+        Return points acquired from placing the piece'''
         piece = np.rot90(self.current_piece, orientation)
         piece_height = piece.shape[0]
         piece_width = piece.shape[1]

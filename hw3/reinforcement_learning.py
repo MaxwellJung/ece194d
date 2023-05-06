@@ -9,7 +9,7 @@ class State:
         return f'State = {self.kwargs}'
     
     def __eq__(self, other) -> bool:
-        return self.kwargs == other.kwargs
+        return repr(self) == repr(other)
     
     def __hash__(self) -> int:
         return hash(str(self))
@@ -33,6 +33,10 @@ class Environment(ABC):
         self.reward: float = 0
         self.all_states: list[State] = []
         self.all_actions: list[Action] = []
+        
+    @abstractmethod
+    def set_state(self, s: State):
+        pass
         
     @abstractmethod
     def get_state(self):
@@ -80,5 +84,21 @@ class RLModel:
                     return episode
                 
     def value_iteration(self):
-        values = {a: 0 for a in  self.environment.all_states}
-        print(values)
+        values = {a: 0 for a in self.environment.all_states}
+        values[State(terminal=True)] = 0
+        
+        discount_factor = 1
+        
+        for i in range(10):
+            for s in self.environment.all_states:
+                potential_values = []
+                for a in self.environment.all_actions:
+                    self.environment.set_state(s)
+                    self.environment.transition(a)
+                    next_state = self.environment.get_state()
+                    r = self.environment.get_reward()
+                    potential_values.append(r+discount_factor*values[next_state])
+                values[s] = max(potential_values)
+            print(values.values())
+            
+        return values

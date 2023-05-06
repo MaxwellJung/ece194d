@@ -1,9 +1,12 @@
-from reinforcement_learning import RLModel
+from reinforcement_learning import RLModel, State
 from tetris import Tetris
+import numpy as np
 
 def main():
-    tetris_RL = RLModel(Tetris())
-    tetris_RL.value_iteration()
+    t = Tetris()
+    tetris_RL = RLModel(t)
+    vals = tetris_RL.value_iteration()
+    
     
 if __name__ == '__main__':
     main()
