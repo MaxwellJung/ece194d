@@ -16,9 +16,6 @@ class Tetris(Environment):
     all_pieces = [piece1, piece2, piece3]
     max_piece_height = max([max(p.shape) for p in all_pieces])
     
-    class illegalMoveException(Exception): pass
-    class gameOverException(Exception): pass
-    
     def __init__(self, width=3, height=3, starting_piece=None):
         self.playable_area = (height, width)
         self.line_height = self.playable_area[0]
@@ -34,6 +31,7 @@ class Tetris(Environment):
         self.game_over = False
     
     def set_state(self, s: State):
+        self.game_over = False
         self.board = s.kwargs['board']
         self.current_piece = s.kwargs['piece']
     
@@ -43,17 +41,12 @@ class Tetris(Environment):
         return State(board=self.board, piece=self.current_piece)
     
     def get_reward(self):
+        if self.game_over:
+            return -100
         return self.reward
         
     def transition(self, a: Action):
-        try:
-            points = self.place_piece(**a.kwargs)
-        except self.illegalMoveException:
-            return
-        except self.gameOverException:
-            # self.reward = -100
-            self.game_over = True
-            return
+        points = self.place_piece(**a.kwargs)
         self.reward = points
         self.select_next_piece()
         
@@ -83,7 +76,7 @@ class Tetris(Environment):
             pad_right = board_width-pad_left-piece_width
             
             try: piece_mask = np.pad(piece, ((pad_top,pad_bottom),(pad_left,pad_right)))
-            except ValueError: raise self.illegalMoveException # illegal orientation/location
+            except ValueError: raise self.illegalActionException # illegal orientation/location
             
             for h in range(self.line_height, -1, -1): # loop until piece completely drops
                 board_buffer = piece_mask + self.board
@@ -106,7 +99,7 @@ class Tetris(Environment):
         points = clear_complete_rows()
         
         above_line = self.board[:-self.line_height]
-        if np.any(above_line): raise self.gameOverException
+        if np.any(above_line): self.game_over = True
         return points
         
     def start_interactive_play(self):
@@ -116,7 +109,7 @@ class Tetris(Environment):
             print(self.current_piece)
             try:
                 points = self.place_piece(orientation=int(input('orientation:')), location=int(input('location:')))
-            except self.illegalMoveException:
+            except self.illegalActionException:
                 print(f'Invalid orientation/location. Try again.')
             except self.gameOverException:
                 self.game_over = True

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import random
+import numpy as np
 
 class State:
     def __init__(self, **kwargs):
@@ -33,6 +34,8 @@ class Environment(ABC):
         self.reward: float = 0
         self.all_states: list[State] = []
         self.all_actions: list[Action] = []
+        
+    class illegalActionException(Exception): pass
         
     @abstractmethod
     def set_state(self, s: State):
@@ -84,21 +87,33 @@ class RLModel:
                     return episode
                 
     def value_iteration(self):
-        values = {a: 0 for a in self.environment.all_states}
-        values[State(terminal=True)] = 0
-        
+        state_values = {a: 0 for a in self.environment.all_states}
+        state_values[State(terminal=True)] = 0
         discount_factor = 1
         
-        for i in range(10):
+        
+        while True:
+            current_v = np.array(list(state_values.values()))
             for s in self.environment.all_states:
                 potential_values = []
                 for a in self.environment.all_actions:
                     self.environment.set_state(s)
-                    self.environment.transition(a)
+                    try:
+                        self.environment.transition(a)
+                    except Environment.illegalActionException: continue
                     next_state = self.environment.get_state()
-                    r = self.environment.get_reward()
-                    potential_values.append(r+discount_factor*values[next_state])
-                values[s] = max(potential_values)
-            print(values.values())
+                    if next_state != State(terminal=True):
+                        next_board = next_state.kwargs['board']
+                        r = self.environment.get_reward()
+                        g = r+1/3*discount_factor*(state_values[State(board=next_board, piece=np.array([[0, 1],[1, 1]]))]+
+                                                state_values[State(board=next_board, piece=np.array([[0, 1, 1],[1, 1, 0]]))]+
+                                                state_values[State(board=next_board, piece=np.array([[1],[1]]))])
+                    else:
+                        g = r+discount_factor*state_values[next_state]
+                    potential_values.append(g)
+                state_values[s] = max(potential_values)
+            new_v = np.array(list(state_values.values()))
+            print(np.linalg.norm(new_v-current_v))
             
-        return values
+            if np.linalg.norm(new_v-current_v) < 0.01:
+                return state_values
