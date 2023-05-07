@@ -102,9 +102,9 @@ class RLModel:
                         self.environment.transition(a)
                     except Environment.illegalActionException: continue
                     next_state = self.environment.get_state()
+                    r = self.environment.get_reward()
                     if next_state != State(terminal=True):
                         next_board = next_state.kwargs['board']
-                        r = self.environment.get_reward()
                         g = r+1/3*discount_factor*(state_values[State(board=next_board, piece=np.array([[0, 1],[1, 1]]))]+
                                                 state_values[State(board=next_board, piece=np.array([[0, 1, 1],[1, 1, 0]]))]+
                                                 state_values[State(board=next_board, piece=np.array([[1],[1]]))])

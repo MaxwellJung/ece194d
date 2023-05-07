@@ -41,8 +41,8 @@ class Tetris(Environment):
         return State(board=self.board, piece=self.current_piece)
     
     def get_reward(self):
-        if self.game_over:
-            return -100
+        # if self.game_over:
+        #     return 0
         return self.reward
         
     def transition(self, a: Action):
