@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def main():
-    p_h = 0.25
+    p_h = 0.55
     p_t = 1-p_h
     discount = 1
     values = np.zeros(100+1)
@@ -23,8 +23,9 @@ def main():
                 potential_new_values.append(v)
             values[s] = max(potential_new_values)
         new = values.copy()
-        print(new)
-        if np.linalg.norm(old-new) < 0.001:
+        if np.linalg.norm(old-new) < 0.0001:
+            print(new)
+            np.save(f'{p_h} values', new)
             break
     
     policy = np.zeros(101)
@@ -42,6 +43,7 @@ def main():
         policy[s] = (np.argmax(next_state_values))
     
     print(policy)
+    np.save(f'{p_h} policy', policy)
     
     fig, ax = plt.subplots()
     ax.plot(np.arange(101), policy)
