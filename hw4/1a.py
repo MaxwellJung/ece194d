@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def main():
-    p_h = 0.55
+    p_h = 0.25
     p_t = 1-p_h
     discount = 1
     values = np.zeros(100+1)
@@ -11,7 +11,7 @@ def main():
         old = values.copy()
         for s in range(1, 100):
             potential_new_values = []
-            for a in range(0, min(s, 100-s)+1):
+            for a in range(1, min(s, 100-s)+1):
                 winning_state = s+a
                 losing_state = s-a
                 if winning_state < 0 or losing_state < 0:
@@ -31,7 +31,7 @@ def main():
     policy = np.zeros(101)
     for s in range(1, 100):
         next_state_values = []
-        for a in range(0, min(s, 100-s)+1):
+        for a in range(1, min(s, 100-s)+1):
             winning_state = s+a
             losing_state = s-a
             if winning_state < 0 or losing_state < 0:
@@ -40,7 +40,7 @@ def main():
             v = p_h*(reward + discount*values[winning_state]) + \
                 p_t*(discount*values[losing_state])
             next_state_values.append(v)
-        policy[s] = (np.argmax(next_state_values))
+        policy[s] = np.argmax(next_state_values) + 1
     
     print(policy)
     np.save(f'{p_h} policy', policy)

@@ -1,57 +1,54 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+def generate_episode(policy: np.ndarray, p_h=0.55, max_steps=1000):
+    state_history = []
+    action_history = []
+    reward_history = []
+    
+    initial_state = np.random.randint(100)
+    state_history.append(initial_state)
+    
+    for i in range(max_steps):
+        state = int(state_history[-1])
+        action = policy[state]
+        action_history.append(action)
+        
+        heads = np.random.random() < p_h
+        next_state = state + action if heads else state - action
+        state_history.append(next_state)
+        
+        reward = 1 if next_state >= 100 else 0
+        reward_history.append(reward)
+        
+        if next_state <= 0 or next_state >= 100:
+            break
+        
+    state_history.pop()
+    
+    return state_history, action_history, reward_history
+
+def monte_carlo(policy: np.ndarray, p_h, num_of_episodes=1000, discount=1):
+    table = {s: [] for s in range(101)}
+    
+    for i in range(num_of_episodes):
+        state_history, action_history, reward_history = generate_episode(policy, p_h=p_h)
+        g = 0
+        for t, s in reversed(list(enumerate(state_history))):
+            g = reward_history[t] + discount*g
+            table[s].append(g)
+            
+    return np.array([np.mean(table[s]) if len(table[s]) > 0 else 0 for s in table])
+    
 def main():
     p_h = 0.25
-    p_t = 1-p_h
-    discount = 1
-    values = np.zeros(100+1)
+    values = monte_carlo(np.load(f'{p_h} policy.npy'), p_h=p_h, num_of_episodes=10000)
+    np.save(f'{p_h} monte_carlo', values)
     
-    while True:
-        old = values.copy()
-        for s in range(1, 100):
-            potential_new_values = []
-            for a in range(0, min(s, 100-s)+1):
-                winning_state = s+a
-                losing_state = s-a
-                if winning_state < 0 or losing_state < 0: 
-                    print(f'{s=} {a=}')
-                    raise Exception
-                reward = 1 if winning_state >= 100 else 0
-                v = p_h*(reward + discount*values[winning_state]) + \
-                    p_t*(discount*values[losing_state])
-                potential_new_values.append(v)
-            values[s] = max(potential_new_values)
-        new = values.copy()
-        print(new)
-        if np.linalg.norm(old-new) < 0.001:
-            break
-    
-    policy = np.zeros(101)
-    for s in range(1, 100):
-        next_state_values = []
-        for a in range(0, min(s, 100-s)+1):
-            winning_state = s+a
-            losing_state = s-a
-            if winning_state < 0 or losing_state < 0:
-                raise Exception
-            reward = 1 if winning_state >= 100 else 0
-            v = p_h*(reward + discount*values[winning_state]) + \
-                p_t*(discount*values[losing_state])
-            next_state_values.append(v)
-        policy[s] = (np.argmax(next_state_values))
-    
-    print(policy)
-    
-    fig, ax = plt.subplots()
-    ax.plot(np.arange(101), policy)
-
-    ax.set(xlabel='current capital', ylabel='stakes',
-        title=f'optimal policy for {p_h=}')
-    ax.grid()
-
-    fig.savefig(f"{p_h} optimal policy.png")
-    plt.show()
+    expected = np.load(f'{p_h} values.npy')
+    actual = values
+    difference = np.linalg.norm(expected-actual)
+    print(f'{expected=}\n{actual=}\n{difference=}')
 
 if __name__ == '__main__':
     main()
