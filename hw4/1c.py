@@ -37,11 +37,11 @@ def monte_carlo(policy: np.ndarray, p_h, num_of_episodes=1000, discount=1):
         for t, s in reversed(list(enumerate(state_history))):
             g = reward_history[t] + discount*g
             table[s].append(g)
-            
+    
     return np.array([np.mean(table[s]) if len(table[s]) > 0 else 0 for s in table])
     
 def main():
-    p_h = 0.25
+    p_h = 0.55
     values = monte_carlo(np.load(f'{p_h} policy.npy'), p_h=p_h, num_of_episodes=10000)
     np.save(f'{p_h} monte_carlo', values)
     

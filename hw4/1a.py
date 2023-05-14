@@ -5,7 +5,9 @@ def main():
     p_h = 0.25
     p_t = 1-p_h
     discount = 1
-    values = np.zeros(100+1)
+    values = np.random.rand(100+1)
+    values[0] = 0
+    values[100] = 0
     
     while True:
         old = values.copy()
@@ -30,7 +32,8 @@ def main():
     
     policy = np.zeros(101)
     for s in range(1, 100):
-        next_state_values = []
+        best_action = 1
+        best_v = 0
         for a in range(1, min(s, 100-s)+1):
             winning_state = s+a
             losing_state = s-a
@@ -39,8 +42,10 @@ def main():
             reward = 1 if winning_state >= 100 else 0
             v = p_h*(reward + discount*values[winning_state]) + \
                 p_t*(discount*values[losing_state])
-            next_state_values.append(v)
-        policy[s] = np.argmax(next_state_values) + 1
+            if v >= best_v:
+                best_v = v
+                best_action = a
+        policy[s] = best_action
     
     print(policy)
     np.save(f'{p_h} policy', policy)
