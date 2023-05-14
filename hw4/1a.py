@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def main():
-    p_h = 0.25
+    p_h = 0.49
     p_t = 1-p_h
     discount = 1
     values = np.random.rand(100+1)
