@@ -7,7 +7,10 @@ def main():
     for s in range(11**16):
         grid = stateToGrid(s)
         state = gridToState(grid)
-        print(f'{s=} {state=} {s==state=}')
+        # print(f'{s=} {state=} {s==state=}')
+        x = featureExtractor(state=state)
+        print(grid)
+        print(x)
         if s != state:
             print(s)
             break
@@ -89,6 +92,27 @@ def gridToState(grid, terminal_value=2048):
     state = a.dot(digit_values)
     
     return state
+
+def featureExtractor(state: int, grid=None):
+    '''
+    converts the state represented by either an integer or grid to a vector of features
+    '''
+    if grid is None: grid = stateToGrid(state)
+    
+    return np.array([mean(grid),
+                     std(grid),])
+
+def mean(grid):
+    '''
+    Calculates the mean of the tiles on the grid
+    '''
+    return np.array(grid).mean()
+
+def std(grid):
+    '''
+    Calculates standard deviation of the tiles on the grid
+    '''
+    return np.array(grid).std()
 
 if __name__ == '__main__':
     main()
