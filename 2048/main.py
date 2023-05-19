@@ -4,8 +4,13 @@ import math
 
 def main():
     # play()
-    grid = stateToGrid(67206423060)
-    print(grid)
+    for s in range(11**16):
+        grid = stateToGrid(s)
+        state = gridToState(grid)
+        print(f'{s=} {state=} {s==state=}')
+        if s != state:
+            print(s)
+            break
     
 transition = {
     'left': logic.left,
@@ -73,6 +78,17 @@ def stateToGrid(state: int, terminal_value=2048):
     grid = grid.tolist()
     
     return grid
+
+def gridToState(grid):
+    base = 11
+    a = np.array(grid)
+    a[a==0] = 1
+    a = a.flatten()
+    a = np.log2(a)
+    digit_values = np.power(base, np.arange(len(a)-1, -1, -1, dtype='int64'))
+    state = a.dot(digit_values)
+    
+    return state
 
 if __name__ == '__main__':
     main()
