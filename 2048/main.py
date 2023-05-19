@@ -50,9 +50,9 @@ def stateToGrid(state: int, terminal_value=2048):
     converts state s denoted by an integer in the range [0, 11^16-1]
     to a 4x4 grid
     '''
-    max_exp = int(math.log2(terminal_value))
+    base = int(math.log2(terminal_value))
     
-    if not 0 <= state < max_exp**16:
+    if not 0 <= state < base**16:
         return None
     
     # helper function
@@ -69,7 +69,7 @@ def stateToGrid(state: int, terminal_value=2048):
     # 16 because there's 16 spaces
     # 11 because there are 11 possible values per space (blank, 2, 4, 8, ... , 1024)
     # reach 2048 on any tile will terminate the game
-    digits = numberToBase(state, max_exp)
+    digits = numberToBase(state, base)
     zeros = [0] * (16-len(digits))
     grid = zeros + digits
     grid = np.array(grid).reshape((4,4))
@@ -79,8 +79,8 @@ def stateToGrid(state: int, terminal_value=2048):
     
     return grid
 
-def gridToState(grid):
-    base = 11
+def gridToState(grid, terminal_value=2048):
+    base = int(math.log2(terminal_value))
     a = np.array(grid)
     a[a==0] = 1
     a = a.flatten()
