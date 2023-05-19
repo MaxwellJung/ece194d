@@ -19,6 +19,10 @@ actions = {
     3: 'down',
 }
 
+# define winning state number as the max state number + 1
+# where max state number = 11**16-1
+WINNING_STATE = 11**16
+
 def policy(state: int):
     '''
     Pick action given state.
@@ -30,13 +34,29 @@ def reward(current_state: int, current_action: int, next_state: int):
     '''
     Calculate reward based on current state, current action, and next state
     '''
-    if isTerminalState(next_state):
+    # reward winning
+    if next_state == WINNING_STATE:
         return +100
-    else:
-        return -1
     
-def isTerminalState(state: int, winningState=11**16):
-    return state == winningState
+    if 0 <= next_state < WINNING_STATE:
+        grid = stateToGrid(next_state)
+        # punish losing or choosing an action that does nothing
+        if logic.game_state(grid) == 'lose' or current_state == next_state:
+            return -100000
+        # punish valid moves by -1
+        else:
+            return -1
+        
+def isTerminalState(state: int):
+    if state == WINNING_STATE:
+        return True
+    
+    if 0 <= state < WINNING_STATE:
+        grid = stateToGrid(state)
+        if logic.game_state(grid) == 'lose':
+            return True
+        else:
+            return False
     
 def generateEpisode(episode_length=1000):
     initial_grid = logic.new_game(4)
@@ -50,6 +70,7 @@ def generateEpisode(episode_length=1000):
         t += 1
         printGrid(stateToGrid(s))
         print(actions[a])
+        print(r)
         s = s_prime
 
 def transition(state: int, action: int):
@@ -90,12 +111,12 @@ def play():
                 print('Lose')
                 break
 
-def stateToGrid(state: int, terminal_value=2048):
+def stateToGrid(state: int, winning_value=2048):
     '''
     converts state number s denoted by an integer 
     in the range [0, 11^16-1] to a 4x4 grid
     '''
-    base = int(math.log2(terminal_value))
+    base = int(math.log2(winning_value))
     if not 0 <= state < base**16: return None
     
     # helper function
@@ -123,7 +144,7 @@ def stateToGrid(state: int, terminal_value=2048):
     
     return grid.tolist()
 
-def gridToState(grid, terminal_value=2048):
+def gridToState(grid, winning_value=2048):
     '''
     Hashes a 4x4 grid to state number s in the range [0, 11^16-1]
     This function should be the inverse of stateToGrid()
@@ -131,11 +152,11 @@ def gridToState(grid, terminal_value=2048):
     Works by first converting the grid to a base 11 representation
     then calculating the actual value of the base 11 representation
     '''
-    base = int(math.log2(terminal_value))
+    base = int(math.log2(winning_value))
     arr = np.array(grid)
     tile_values = arr.flatten()
-    if terminal_value in tile_values:
-        return base**len(tile_values)
+    if winning_value in tile_values:
+        return WINNING_STATE
     # Replace blank tiles with 1
     arr[arr==0] = 1
     # Convert to base 11 representation
