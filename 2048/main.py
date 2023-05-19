@@ -1,8 +1,11 @@
 import numpy as np
 import logic
+import math
 
 def main():
-    play()
+    # play()
+    grid = stateToGrid(67206423060)
+    print(grid)
     
 transition = {
     'left': logic.left,
@@ -36,7 +39,40 @@ def play():
             if logic.game_state(grid) == 'lose':
                 print('Lose')
                 break
-        
-        
+
+def stateToGrid(state: int, terminal_value=2048):
+    '''
+    converts state s denoted by an integer in the range [0, 11^16-1]
+    to a 4x4 grid
+    '''
+    max_exp = int(math.log2(terminal_value))
+    
+    if not 0 <= state < max_exp**16:
+        return None
+    
+    # helper function
+    def numberToBase(n, b):
+        if n == 0:
+            return [0]
+        digits = []
+        while n:
+            digits.append(int(n % b))
+            n //= b
+        return digits[::-1]
+    
+    # convert state to a 16-digit base 11 number
+    # 16 because there's 16 spaces
+    # 11 because there are 11 possible values per space (blank, 2, 4, 8, ... , 1024)
+    # reach 2048 on any tile will terminate the game
+    digits = numberToBase(state, max_exp)
+    zeros = [0] * (16-len(digits))
+    grid = zeros + digits
+    grid = np.array(grid).reshape((4,4))
+    grid = np.power(2, grid)
+    grid[grid==1] = 0
+    grid = grid.tolist()
+    
+    return grid
+
 if __name__ == '__main__':
     main()
