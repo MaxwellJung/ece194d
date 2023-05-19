@@ -3,24 +3,67 @@ import logic
 import math
 
 def main():
-    # play()
-    for s in range(11**16):
-        grid = stateToGrid(s)
-        state = gridToState(grid)
-        # print(f'{s=} {state=} {s==state=}')
-        x = featureExtractor(state=state)
-        print(grid)
-        print(x)
-        if s != state:
-            print(s)
-            break
-    
-transition = {
-    'left': logic.left,
+    generateEpisode()
+
+directionLogic = {
     'right': logic.right,
     'up': logic.up,
-    'down': logic.down
+    'left': logic.left,
+    'down': logic.down,
 }
+
+actions = {
+    0: 'right',
+    1: 'up',
+    2: 'left',
+    3: 'down',
+}
+
+def policy(state: int):
+    '''
+    Pick action given state.
+    Current set to random policy
+    '''
+    return np.random.randint(len(actions))
+
+def reward(current_state: int, current_action: int, next_state: int):
+    '''
+    Calculate reward based on current state, current action, and next state
+    '''
+    if isTerminalState(next_state):
+        return +100
+    else:
+        return -1
+    
+def isTerminalState(state: int, winningState=11**16):
+    return state == winningState
+    
+def generateEpisode(episode_length=1000):
+    initial_grid = logic.new_game(4)
+    s = gridToState(initial_grid)
+    
+    t = 0
+    while not isTerminalState(s) and t < episode_length:
+        a = policy(s)
+        s_prime = transition(s, a)
+        r = reward(s, a, s_prime)
+        t += 1
+        printGrid(stateToGrid(s))
+        print(actions[a])
+        s = s_prime
+
+def transition(state: int, action: int):
+    grid = stateToGrid(state)
+    direction = actions[action]
+    grid, done = directionLogic[direction](grid)
+    
+    if done:
+        grid = logic.add_two(grid)
+        
+    return gridToState(grid)
+
+def printGrid(grid):
+    print(np.array(grid))
 
 def play():
     grid = logic.new_game(4) # create new game
@@ -28,16 +71,15 @@ def play():
         # show grid
         # each row is printed on a new line because otherwise, 
         # the nested list is printed as a single line
-        for row in grid:
-            print(row)
+        printGrid(grid)
         # ask user for input
         direction = input(f'Direction (left, right, up, down): ')
-        if direction not in transition.keys():
+        if direction not in directionLogic.keys():
             print(f'Invalid direction. Please input a valid direction.')
             continue
         # transition the grid to next state
         # done flag is used to check if the direction is a valid move
-        grid, done = transition[direction](grid)
+        grid, done = directionLogic[direction](grid)
         if done:
             # add new tile of value 2 to random position on the grid
             grid = logic.add_two(grid)
@@ -90,22 +132,25 @@ def gridToState(grid, terminal_value=2048):
     then calculating the actual value of the base 11 representation
     '''
     base = int(math.log2(terminal_value))
-    a = np.array(grid)
+    arr = np.array(grid)
+    tile_values = arr.flatten()
+    if terminal_value in tile_values:
+        return base**len(tile_values)
     # Replace blank tiles with 1
-    a[a==0] = 1
+    arr[arr==0] = 1
     # Convert to base 11 representation
-    digits = np.log2(a.flatten())
+    digits = np.log2(arr.flatten()).astype('int64')
     values_per_digit = np.power(base, np.arange(len(digits)-1, -1, -1, dtype='int64'))
     state = digits.dot(values_per_digit)
     
     return state
 
-def featureExtractor(grid=None, state: int=0):
+def featureExtractor(state: int):
     '''
     converts grid to feature vector
     or alternatively, converts state number to feature vector
     '''
-    if grid is None: grid = stateToGrid(state)
+    grid = stateToGrid(state)
     
     return np.array([mean(grid),
                      std(grid),])
