@@ -8,6 +8,7 @@
 
 import random
 import constants as c
+import numpy as np
 
 #######
 # Task 1a #
@@ -24,6 +25,7 @@ def new_game(n):
         matrix.append([0] * n)
     matrix = add_two(matrix)
     matrix = add_two(matrix)
+    matrix = np.array(matrix)
     return matrix
 
 ###########
@@ -98,6 +100,7 @@ def reverse(mat):
         new.append([])
         for j in range(len(mat[0])):
             new[i].append(mat[i][len(mat[0])-j-1])
+    new = np.array(new)
     return new
 
 ###########
@@ -116,6 +119,7 @@ def transpose(mat):
         new.append([])
         for j in range(len(mat)):
             new[i].append(mat[j][i])
+    new = np.array(new)
     return new
 
 ##########
@@ -147,6 +151,7 @@ def cover_up(mat):
                 if j != count:
                     done = True
                 count += 1
+    new = np.array(new)
     return new, done
 
 def merge(mat, done):
