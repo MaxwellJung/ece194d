@@ -3,7 +3,15 @@ import logic
 import math
 
 def main():
-    generateEpisode()
+    s_s, a_s, r_s = generateEpisode()
+    
+    for t, s in enumerate(s_s):
+        print(stateToGrid(s))
+        try:
+            print(actions[a_s[t]])
+            print(r_s[t])
+        except IndexError:
+            pass
 
 directionLogic = {
     'right': logic.right,
@@ -59,19 +67,26 @@ def isTerminalState(state: int):
             return False
     
 def generateEpisode(episode_length=1000):
+    state_history = []
+    action_history = []
+    reward_history = []
+    
     initial_grid = logic.new_game(4)
     s = gridToState(initial_grid)
+    state_history.append(s)
     
     t = 0
     while not isTerminalState(s) and t < episode_length:
         a = policy(s)
+        action_history.append(a)
         s_prime = transition(s, a)
         r = reward(s, a, s_prime)
+        reward_history.append(r)
         t += 1
-        printGrid(stateToGrid(s))
-        print(actions[a])
-        print(r)
         s = s_prime
+        state_history.append(s)
+        
+    return state_history, action_history, reward_history
 
 def transition(state: int, action: int):
     grid = stateToGrid(state)
@@ -83,16 +98,13 @@ def transition(state: int, action: int):
         
     return gridToState(grid)
 
-def printGrid(grid):
-    print(np.array(grid))
-
 def play():
     grid = logic.new_game(4) # create new game
     while True:
         # show grid
         # each row is printed on a new line because otherwise, 
         # the nested list is printed as a single line
-        printGrid(grid)
+        print(grid)
         # ask user for input
         direction = input(f'Direction (left, right, up, down): ')
         if direction not in directionLogic.keys():
@@ -142,7 +154,7 @@ def stateToGrid(state: int, winning_value=2048):
     # Replace all tiles of value 1 with 0 (aka blank tile)
     grid[grid==1] = 0
     
-    return grid.tolist()
+    return grid
 
 def gridToState(grid, winning_value=2048):
     '''
@@ -176,17 +188,17 @@ def featureExtractor(state: int):
     return np.array([mean(grid),
                      std(grid),])
 
-def mean(grid):
+def mean(grid: np.ndarray):
     '''
     Calculates the mean of the tiles on the grid
     '''
-    return np.array(grid).mean()
+    return grid.mean()
 
-def std(grid):
+def std(grid: np.ndarray):
     '''
     Calculates standard deviation of the tiles on the grid
     '''
-    return np.array(grid).std()
+    return grid.std()
 
 if __name__ == '__main__':
     main()
