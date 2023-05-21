@@ -6,14 +6,15 @@ def main():
     w = np.random.rand(2)
     discount_factor = 1
     
-    for i in range(100):
+    for i in range(100): # repeated 100 times
         epi = Episode()
         for t in range(epi.length):
-            step_size = 1/(t+1)
-            measurement = epi.rewardAt(t+1) + discount_factor*v_hat(epi.stateAt(t+1), w)
+            step_size = 1/(t+1) # variable alpha
+            measurement = epi.rewardAt(t+1) + discount_factor*v_hat(epi.stateAt(t+1), w) # variable U_t
             actual = v_hat(epi.stateAt(t), w)
-            grad = featureExtractor(epi.stateAt(t))
-            w = w + step_size*(measurement - actual)*grad
+            grad = getFeatureVector(epi.stateAt(t)) # gradient of (W^T)X is X
+            print(grad)
+            w = w + step_size*(measurement - actual)*grad # w_t+1 = w_t + a[U_t-v(s_t, w_t)]*grad(v(s_t, w_t))
             print(f'{t=} {w=}')
 
 direction_logic = {
@@ -42,8 +43,11 @@ def policy(state: int):
     return np.random.randint(len(action_names))
 
 def v_hat(state, weight: np.ndarray):
-    x = featureExtractor(state)
-    return weight.dot(x)
+    if isTerminalState(state):
+        return 0
+    else:
+        x = getFeatureVector(state)
+        return weight.dot(x)
 
 def reward(current_state: int, current_action: int, next_state: int):
     '''
@@ -204,7 +208,7 @@ def gridToState(grid, winning_value=2048):
     
     return state
 
-def featureExtractor(state: int):
+def getFeatureVector(state: int):
     '''
     Converts state number to feature vector
     '''
