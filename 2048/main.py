@@ -3,19 +3,28 @@ import logic
 import math
 
 def main():
+    w = sgd(tolerance=0.01)
+    print(w)
+    
+def sgd(tolerance=0.001):
     w = np.random.rand(2)
     discount_factor = 1
     
-    for i in range(100): # repeated 100 times
+    i = 1
+    while True:
         epi = Episode()
         for t in range(epi.length):
-            step_size = 1/(t+1) # variable alpha
+            step_size = 1/i # variable alpha
             measurement = epi.rewardAt(t+1) + discount_factor*v_hat(epi.stateAt(t+1), w) # variable U_t
             actual = v_hat(epi.stateAt(t), w)
             grad = getFeatureVector(epi.stateAt(t)) # gradient of (W^T)X is X
-            print(grad)
-            w = w + step_size*(measurement - actual)*grad # w_t+1 = w_t + a[U_t-v(s_t, w_t)]*grad(v(s_t, w_t))
-            print(f'{t=} {w=}')
+            update = step_size*(measurement - actual)*grad
+            w = w + update # w_t+1 = w_t + a[U_t-v(s_t, w_t)]*grad(v(s_t, w_t))
+            # print(f'{w=} {i=} {t=}')
+            i += 1
+            if np.linalg.norm(update) < tolerance:
+                return w
+            
 
 direction_logic = {
     'right': logic.right,
