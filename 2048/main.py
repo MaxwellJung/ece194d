@@ -3,24 +3,27 @@ import logic
 import math
 
 def main():
-    s_s, a_s, r_s = generateEpisode()
+    w = np.random.rand(2)
+    discount_factor = 1
     
-    for t, s in enumerate(s_s):
-        print(stateToGrid(s))
-        try:
-            print(actions[a_s[t]])
-            print(r_s[t])
-        except IndexError:
-            pass
+    for i in range(100):
+        epi = Episode()
+        for t in range(epi.length):
+            step_size = 1/(t+1)
+            measurement = epi.rewardAt(t+1) + discount_factor*v_hat(epi.stateAt(t+1), w)
+            actual = v_hat(epi.stateAt(t), w)
+            grad = featureExtractor(epi.stateAt(t))
+            w = w + step_size*(measurement - actual)*grad
+            print(f'{t=} {w=}')
 
-directionLogic = {
+direction_logic = {
     'right': logic.right,
     'up': logic.up,
     'left': logic.left,
     'down': logic.down,
 }
 
-actions = {
+action_names = {
     0: 'right',
     1: 'up',
     2: 'left',
@@ -33,10 +36,14 @@ WINNING_STATE = 11**16
 
 def policy(state: int):
     '''
-    Pick action given state.
-    Current set to random policy
+    Pick an action given state.
+    Currently set to a random policy
     '''
-    return np.random.randint(len(actions))
+    return np.random.randint(len(action_names))
+
+def v_hat(state, weight: np.ndarray):
+    x = featureExtractor(state)
+    return weight.dot(x)
 
 def reward(current_state: int, current_action: int, next_state: int):
     '''
@@ -65,33 +72,52 @@ def isTerminalState(state: int):
             return True
         else:
             return False
-    
-def generateEpisode(episode_length=1000):
-    state_history = []
-    action_history = []
-    reward_history = []
-    
-    initial_grid = logic.new_game(4)
-    s = gridToState(initial_grid)
-    state_history.append(s)
-    
-    t = 0
-    while not isTerminalState(s) and t < episode_length:
-        a = policy(s)
-        action_history.append(a)
-        s_prime = transition(s, a)
-        r = reward(s, a, s_prime)
-        reward_history.append(r)
-        t += 1
-        s = s_prime
-        state_history.append(s)
+
+class Episode:
+    def __init__(self, max_length=1000):
+        self.state_history = []
+        self.action_history = []
+        self.reward_history = [None]
         
-    return state_history, action_history, reward_history
+        initial_grid = logic.new_game(4)
+        s = gridToState(initial_grid)
+        self.state_history.append(s)
+        
+        t = 0
+        while not isTerminalState(s) and t < max_length:
+            a = policy(s)
+            self.action_history.append(a)
+            s_prime = transition(s, a)
+            r = reward(s, a, s_prime)
+            self.reward_history.append(r)
+            t += 1
+            s = s_prime
+            self.state_history.append(s)
+            
+        self.length = len(self.action_history)
+            
+    def stateAt(self, t):
+        if 0 <= t < len(self.state_history):
+            return self.state_history[t]
+        else:
+            return None
+    
+    def actionAt(self, t):
+        if 0 <= t < len(self.action_history):
+            return self.action_history[t]
+        else:
+            return None
+    
+    def rewardAt(self, t):
+        if 1 <= t < len(self.reward_history):
+            return self.reward_history[t]
+        else:
+            return None
 
 def transition(state: int, action: int):
     grid = stateToGrid(state)
-    direction = actions[action]
-    grid, done = directionLogic[direction](grid)
+    direction = action_names[action]
+    grid, done = direction_logic[direction](grid)
     
     if done:
         grid = logic.add_two(grid)
@@ -107,12 +133,12 @@ def play():
         print(grid)
         # ask user for input
         direction = input(f'Direction (left, right, up, down): ')
-        if direction not in directionLogic.keys():
+        if direction not in direction_logic.keys():
             print(f'Invalid direction. Please input a valid direction.')
             continue
         # transition the grid to next state
         # done flag is used to check if the direction is a valid move
-        grid, done = directionLogic[direction](grid)
+        grid, done = direction_logic[direction](grid)
         if done:
             # add new tile of value 2 to random position on the grid
             grid = logic.add_two(grid)
@@ -180,8 +206,7 @@ def gridToState(grid, winning_value=2048):
 
 def featureExtractor(state: int):
     '''
-    converts grid to feature vector
-    or alternatively, converts state number to feature vector
+    Converts state number to feature vector
     '''
     grid = stateToGrid(state)
     
