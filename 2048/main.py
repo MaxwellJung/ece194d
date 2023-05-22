@@ -3,22 +3,23 @@ import logic
 import math
 
 def main():
-    w = sgd(tolerance=0.01)
-    print(w)
+    for i in range(10):
+        w = sgd()
+        print(w)
     
-def sgd(tolerance=0.001):
-    w = np.random.rand(2)
+def sgd(tolerance=0.000001):
+    w = np.random.rand(3)
     discount_factor = 1
     
     i = 1
     while True:
         epi = Episode()
         for t in range(epi.length):
-            step_size = 1/i # variable alpha
-            measurement = epi.rewardAt(t+1) + discount_factor*v_hat(epi.stateAt(t+1), w) # variable U_t
+            learning_rate = 0.1 # alpha
+            measurement = epi.rewardAt(t+1) + discount_factor*v_hat(epi.stateAt(t+1), w) # U_t
             actual = v_hat(epi.stateAt(t), w)
             grad = getFeatureVector(epi.stateAt(t)) # gradient of (W^T)X is X
-            update = step_size*(measurement - actual)*grad
+            update = learning_rate*(measurement - actual)*grad
             w = w + update # w_t+1 = w_t + a[U_t-v(s_t, w_t)]*grad(v(s_t, w_t))
             # print(f'{w=} {i=} {t=}')
             i += 1
@@ -64,13 +65,13 @@ def reward(current_state: int, current_action: int, next_state: int):
     '''
     # reward winning
     if next_state == WINNING_STATE:
-        return +100
+        return +10
     
     if 0 <= next_state < WINNING_STATE:
         grid = stateToGrid(next_state)
         # punish losing or choosing an action that does nothing
         if logic.game_state(grid) == 'lose' or current_state == next_state:
-            return -100000
+            return -10
         # punish valid moves by -1
         else:
             return -1
@@ -224,7 +225,8 @@ def getFeatureVector(state: int):
     grid = stateToGrid(state)
     
     return np.array([mean(grid),
-                     std(grid),])
+                     std(grid),
+                     fullness(grid)])
 
 def mean(grid: np.ndarray):
     '''
@@ -237,6 +239,12 @@ def std(grid: np.ndarray):
     Calculates standard deviation of the tiles on the grid
     '''
     return grid.std()
+
+def fullness(grid: np.ndarray):
+    '''
+    Calculates how full the grid is
+    '''
+    return np.count_nonzero(grid)
 
 if __name__ == '__main__':
     main()
