@@ -17,9 +17,9 @@ def sgd(tolerance=0.000001):
         for t in range(epi.length):
             learning_rate = 0.1 # alpha
             measurement = epi.rewardAt(t+1) + discount_factor*v_hat(epi.stateAt(t+1), w) # U_t
-            actual = v_hat(epi.stateAt(t), w)
+            estimate = v_hat(epi.stateAt(t), w)
             grad = getFeatureVector(epi.stateAt(t)) # gradient of (W^T)X is X
-            update = learning_rate*(measurement - actual)*grad
+            update = learning_rate*(measurement - estimate)*grad
             w = w + update # w_t+1 = w_t + a[U_t-v(s_t, w_t)]*grad(v(s_t, w_t))
             # print(f'{w=} {i=} {t=}')
             i += 1
