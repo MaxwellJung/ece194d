@@ -8,7 +8,7 @@ def main():
         print(w)
     
 def sgd(tolerance=0.000001):
-    w = np.random.rand(3)
+    w = np.random.rand(4)
     discount_factor = 1
     
     i = 1
@@ -224,7 +224,8 @@ def getFeatureVector(state: int):
     '''
     grid = stateToGrid(state)
     
-    return np.array([mean(grid),
+    return np.array([1,
+                     mean(grid),
                      std(grid),
                      fullness(grid)])
 
