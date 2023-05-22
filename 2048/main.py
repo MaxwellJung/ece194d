@@ -3,28 +3,35 @@ import logic
 import math
 
 def main():
-    for i in range(10):
+    w_s = []
+    for i in range(5):
         w = sgd()
-        print(w)
+        w_s.append(w)
+        
+    for trial, w in enumerate(w_s):
+        print(f'{trial=} {w}')
     
-def sgd(tolerance=0.000001):
-    w = np.random.rand(4)
+def sgd(tolerance=1e-2):
+    w = np.random.rand(3)
     discount_factor = 1
     
-    i = 1
+    update_count = 1
+    episode_count = 1
     while True:
         epi = Episode()
+        old_w = w.copy()
         for t in range(epi.length):
-            learning_rate = 0.1 # alpha
+            learning_rate = 1e-4 # 1/i # alpha
             measurement = epi.rewardAt(t+1) + discount_factor*v_hat(epi.stateAt(t+1), w) # U_t
             estimate = v_hat(epi.stateAt(t), w)
             grad = getFeatureVector(epi.stateAt(t)) # gradient of (W^T)X is X
             update = learning_rate*(measurement - estimate)*grad
             w = w + update # w_t+1 = w_t + a[U_t-v(s_t, w_t)]*grad(v(s_t, w_t))
-            # print(f'{w=} {i=} {t=}')
-            i += 1
-            if np.linalg.norm(update) < tolerance:
-                return w
+            update_count += 1
+        episode_count += 1
+        # Print progress every 100 episode
+        if episode_count%100 == 0: print(f'{update_count=} {w}')
+        if np.linalg.norm(old_w-w) < tolerance: return w
             
 
 direction_logic = {
@@ -224,8 +231,7 @@ def getFeatureVector(state: int):
     '''
     grid = stateToGrid(state)
     
-    return np.array([1,
-                     mean(grid),
+    return np.array([mean(grid),
                      std(grid),
                      fullness(grid)])
 
