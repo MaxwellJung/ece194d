@@ -10,9 +10,11 @@ def main():
         
     for trial, w in enumerate(w_s):
         print(f'{trial=} {w}')
+        
+rng = np.random.default_rng()
     
-def sgd(tolerance=1e-2):
-    w = np.random.rand(3)
+def sgd(tolerance=1e-3):
+    w = rng.uniform(low=-1e2, high=1e2, size=3)
     discount_factor = 1
     
     update_count = 1
