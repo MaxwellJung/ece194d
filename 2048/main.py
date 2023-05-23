@@ -13,7 +13,7 @@ def main():
         
 rng = np.random.default_rng()
     
-def sgd(tolerance=1e-3):
+def sgd(tolerance=1e-2):
     w = rng.uniform(low=-1e2, high=1e2, size=3)
     discount_factor = 1
     
