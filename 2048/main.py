@@ -1,6 +1,7 @@
 import numpy as np
 import logic
 import math
+import array
 
 def main():
     w_s = []
@@ -13,7 +14,7 @@ def main():
         
 rng = np.random.default_rng()
     
-def sgd(tolerance=1e-2):
+def sgd(tolerance=1e-3):
     w = rng.uniform(low=-1e2, high=1e2, size=3)
     discount_factor = 1
     
@@ -50,16 +51,20 @@ action_names = {
     3: 'down',
 }
 
+policy = array.array('i', [np.random.randint(len(action_names))])*11**16
+
 # define winning state number as the max state number + 1
 # where max state number = 11**16-1
 WINNING_STATE = 11**16
 
-def policy(state: int):
-    '''
-    Pick an action given state.
-    Currently set to a random policy
-    '''
-    return np.random.randint(len(action_names))
+def improvePolicy():
+    for state in range(11**16):
+        q_state = []
+        for a in action_names:
+            s_prime = transition(state, a)
+            r = reward(state, s_prime)
+            q_state.append(r)
+        policy[state] = q_state[np.argmax(q_state)]
 
 def v_hat(state, weight: np.ndarray):
     if isTerminalState(state):
@@ -68,7 +73,7 @@ def v_hat(state, weight: np.ndarray):
         x = getFeatureVector(state)
         return weight.dot(x)
 
-def reward(current_state: int, current_action: int, next_state: int):
+def reward(current_state: int, next_state: int):
     '''
     Calculate reward based on current state, current action, and next state
     '''
@@ -108,10 +113,10 @@ class Episode:
         
         t = 0
         while not isTerminalState(s) and t < max_length:
-            a = policy(s)
+            a = policy[s]
             self.action_history.append(a)
             s_prime = transition(s, a)
-            r = reward(s, a, s_prime)
+            r = reward(s, s_prime)
             self.reward_history.append(r)
             t += 1
             s = s_prime
@@ -235,7 +240,8 @@ def getFeatureVector(state: int):
     
     return np.array([mean(grid),
                      std(grid),
-                     fullness(grid)])
+                     fullness(grid),
+                     distfromcenter(grid)])
 
 def mean(grid: np.ndarray):
     '''
@@ -254,6 +260,14 @@ def fullness(grid: np.ndarray):
     Calculates how full the grid is
     '''
     return np.count_nonzero(grid)
+
+def distfromcenter(grid: np.ndarray):
+    '''
+    Calculates distance of the largest number from the center
+    '''
+    maxIndex = np.argmax(grid)
+    return 0 if maxIndex == 5 or maxIndex == 6 or maxIndex == 9 or maxIndex == 10 else 1
+
 
 if __name__ == '__main__':
     main()
