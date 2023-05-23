@@ -50,13 +50,11 @@ def play():
 
 def stateToGrid(state: int, terminal_value=2048):
     '''
-    converts state s denoted by an integer in the range [0, 11^16-1]
-    to a 4x4 grid
+    converts state number s denoted by an integer 
+    in the range [0, 11^16-1] to a 4x4 grid
     '''
     base = int(math.log2(terminal_value))
-    
-    if not 0 <= state < base**16:
-        return None
+    if not 0 <= state < base**16: return None
     
     # helper function
     def numberToBase(n, b):
@@ -68,34 +66,44 @@ def stateToGrid(state: int, terminal_value=2048):
             n //= b
         return digits[::-1]
     
-    # convert state to a 16-digit base 11 number
-    # 16 because there's 16 spaces
-    # 11 because there are 11 possible values per space (blank, 2, 4, 8, ... , 1024)
-    # reach 2048 on any tile will terminate the game
+    # Convert state number to 16 digit base 11 representation
+    # where each digit represents a tile
     digits = numberToBase(state, base)
+    # Pad 0s in the front to get total 16 digits
     zeros = [0] * (16-len(digits))
     grid = zeros + digits
+    # Rearrange digits in a 4x4 grid
     grid = np.array(grid).reshape((4,4))
+    # Convert digit values to tile values
     grid = np.power(2, grid)
+    # Replace all tiles of value 1 with 0 (aka blank tile)
     grid[grid==1] = 0
-    grid = grid.tolist()
     
-    return grid
+    return grid.tolist()
 
 def gridToState(grid, terminal_value=2048):
+    '''
+    Hashes a 4x4 grid to state number s in the range [0, 11^16-1]
+    This function should be the inverse of stateToGrid()
+    
+    Works by first converting the grid to a base 11 representation
+    then calculating the actual value of the base 11 representation
+    '''
     base = int(math.log2(terminal_value))
     a = np.array(grid)
+    # Replace blank tiles with 1
     a[a==0] = 1
-    a = a.flatten()
-    a = np.log2(a)
-    digit_values = np.power(base, np.arange(len(a)-1, -1, -1, dtype='int64'))
-    state = a.dot(digit_values)
+    # Convert to base 11 representation
+    digits = np.log2(a.flatten())
+    values_per_digit = np.power(base, np.arange(len(digits)-1, -1, -1, dtype='int64'))
+    state = digits.dot(values_per_digit)
     
     return state
 
-def featureExtractor(state: int, grid=None):
+def featureExtractor(grid=None, state: int=0):
     '''
-    converts the state represented by either an integer or grid to a vector of features
+    converts grid to feature vector
+    or alternatively, converts state number to feature vector
     '''
     if grid is None: grid = stateToGrid(state)
     
