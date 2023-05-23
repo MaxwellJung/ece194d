@@ -3,24 +3,149 @@ import logic
 import math
 
 def main():
-    # play()
-    for s in range(11**16):
-        grid = stateToGrid(s)
-        state = gridToState(grid)
-        # print(f'{s=} {state=} {s==state=}')
-        x = featureExtractor(state=state)
-        print(grid)
-        print(x)
-        if s != state:
-            print(s)
-            break
+    w_s = []
+    for i in range(5):
+        w = sgd()
+        w_s.append(w)
+        
+    for trial, w in enumerate(w_s):
+        print(f'{trial=} {w}')
+        
+rng = np.random.default_rng()
     
-transition = {
-    'left': logic.left,
+def sgd(tolerance=1e-2):
+    w = rng.uniform(low=-1e2, high=1e2, size=3)
+    discount_factor = 1
+    
+    update_count = 1
+    episode_count = 1
+    while True:
+        epi = Episode()
+        old_w = w.copy()
+        for t in range(epi.length):
+            learning_rate = 1e-4 # 1/i # alpha
+            measurement = epi.rewardAt(t+1) + discount_factor*v_hat(epi.stateAt(t+1), w) # U_t
+            estimate = v_hat(epi.stateAt(t), w)
+            grad = getFeatureVector(epi.stateAt(t)) # gradient of (W^T)X is X
+            update = learning_rate*(measurement - estimate)*grad
+            w = w + update # w_t+1 = w_t + a[U_t-v(s_t, w_t)]*grad(v(s_t, w_t))
+            update_count += 1
+        episode_count += 1
+        # Print progress every 100 episode
+        if episode_count%100 == 0: print(f'{update_count=} {w}')
+        if np.linalg.norm(old_w-w) < tolerance: return w
+            
+
+direction_logic = {
     'right': logic.right,
     'up': logic.up,
-    'down': logic.down
+    'left': logic.left,
+    'down': logic.down,
 }
+
+action_names = {
+    0: 'right',
+    1: 'up',
+    2: 'left',
+    3: 'down',
+}
+
+# define winning state number as the max state number + 1
+# where max state number = 11**16-1
+WINNING_STATE = 11**16
+
+def policy(state: int):
+    '''
+    Pick an action given state.
+    Currently set to a random policy
+    '''
+    return np.random.randint(len(action_names))
+
+def v_hat(state, weight: np.ndarray):
+    if isTerminalState(state):
+        return 0
+    else:
+        x = getFeatureVector(state)
+        return weight.dot(x)
+
+def reward(current_state: int, current_action: int, next_state: int):
+    '''
+    Calculate reward based on current state, current action, and next state
+    '''
+    # reward winning
+    if next_state == WINNING_STATE:
+        return +10
+    
+    if 0 <= next_state < WINNING_STATE:
+        grid = stateToGrid(next_state)
+        # punish losing or choosing an action that does nothing
+        if logic.game_state(grid) == 'lose' or current_state == next_state:
+            return -10
+        # punish valid moves by -1
+        else:
+            return -1
+        
+def isTerminalState(state: int):
+    if state == WINNING_STATE:
+        return True
+    
+    if 0 <= state < WINNING_STATE:
+        grid = stateToGrid(state)
+        if logic.game_state(grid) == 'lose':
+            return True
+        else:
+            return False
+
+class Episode:
+    def __init__(self, max_length=1000):
+        self.state_history = []
+        self.action_history = []
+        self.reward_history = [None]
+        
+        initial_grid = logic.new_game(4)
+        s = gridToState(initial_grid)
+        self.state_history.append(s)
+        
+        t = 0
+        while not isTerminalState(s) and t < max_length:
+            a = policy(s)
+            self.action_history.append(a)
+            s_prime = transition(s, a)
+            r = reward(s, a, s_prime)
+            self.reward_history.append(r)
+            t += 1
+            s = s_prime
+            self.state_history.append(s)
+            
+        self.length = len(self.action_history)
+            
+    def stateAt(self, t):
+        if 0 <= t < len(self.state_history):
+            return self.state_history[t]
+        else:
+            return None
+    
+    def actionAt(self, t):
+        if 0 <= t < len(self.action_history):
+            return self.action_history[t]
+        else:
+            return None
+    
+    def rewardAt(self, t):
+        if 1 <= t < len(self.reward_history):
+            return self.reward_history[t]
+        else:
+            return None
+
+def transition(state: int, action: int):
+    grid = stateToGrid(state)
+    direction = action_names[action]
+    grid, done = direction_logic[direction](grid)
+    
+    if done:
+        grid = logic.add_two(grid)
+        
+    return gridToState(grid)
 
 def play():
     grid = logic.new_game(4) # create new game
@@ -28,16 +153,15 @@ def play():
         # show grid
         # each row is printed on a new line because otherwise, 
         # the nested list is printed as a single line
-        for row in grid:
-            print(row)
+        print(grid)
         # ask user for input
         direction = input(f'Direction (left, right, up, down): ')
-        if direction not in transition.keys():
+        if direction not in direction_logic.keys():
             print(f'Invalid direction. Please input a valid direction.')
             continue
         # transition the grid to next state
         # done flag is used to check if the direction is a valid move
-        grid, done = transition[direction](grid)
+        grid, done = direction_logic[direction](grid)
         if done:
             # add new tile of value 2 to random position on the grid
             grid = logic.add_two(grid)
@@ -48,12 +172,12 @@ def play():
                 print('Lose')
                 break
 
-def stateToGrid(state: int, terminal_value=2048):
+def stateToGrid(state: int, winning_value=2048):
     '''
     converts state number s denoted by an integer 
     in the range [0, 11^16-1] to a 4x4 grid
     '''
-    base = int(math.log2(terminal_value))
+    base = int(math.log2(winning_value))
     if not 0 <= state < base**16: return None
     
     # helper function
@@ -79,9 +203,9 @@ def stateToGrid(state: int, terminal_value=2048):
     # Replace all tiles of value 1 with 0 (aka blank tile)
     grid[grid==1] = 0
     
-    return grid.tolist()
+    return grid
 
-def gridToState(grid, terminal_value=2048):
+def gridToState(grid, winning_value=2048):
     '''
     Hashes a 4x4 grid to state number s in the range [0, 11^16-1]
     This function should be the inverse of stateToGrid()
@@ -89,38 +213,47 @@ def gridToState(grid, terminal_value=2048):
     Works by first converting the grid to a base 11 representation
     then calculating the actual value of the base 11 representation
     '''
-    base = int(math.log2(terminal_value))
-    a = np.array(grid)
+    base = int(math.log2(winning_value))
+    arr = np.array(grid)
+    tile_values = arr.flatten()
+    if winning_value in tile_values:
+        return WINNING_STATE
     # Replace blank tiles with 1
-    a[a==0] = 1
+    arr[arr==0] = 1
     # Convert to base 11 representation
-    digits = np.log2(a.flatten())
+    digits = np.log2(arr.flatten()).astype('int64')
     values_per_digit = np.power(base, np.arange(len(digits)-1, -1, -1, dtype='int64'))
     state = digits.dot(values_per_digit)
     
     return state
 
-def featureExtractor(grid=None, state: int=0):
+def getFeatureVector(state: int):
     '''
-    converts grid to feature vector
-    or alternatively, converts state number to feature vector
+    Converts state number to feature vector
     '''
-    if grid is None: grid = stateToGrid(state)
+    grid = stateToGrid(state)
     
     return np.array([mean(grid),
-                     std(grid),])
+                     std(grid),
+                     fullness(grid)])
 
-def mean(grid):
+def mean(grid: np.ndarray):
     '''
     Calculates the mean of the tiles on the grid
     '''
-    return np.array(grid).mean()
+    return grid.mean()
 
-def std(grid):
+def std(grid: np.ndarray):
     '''
     Calculates standard deviation of the tiles on the grid
     '''
-    return np.array(grid).std()
+    return grid.std()
+
+def fullness(grid: np.ndarray):
+    '''
+    Calculates how full the grid is
+    '''
+    return np.count_nonzero(grid)
 
 if __name__ == '__main__':
     main()
