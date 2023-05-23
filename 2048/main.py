@@ -1,26 +1,29 @@
+from typing import Any
 import numpy as np
 import logic
 import math
 
-def main():
-    w_s = []
-    for i in range(5):
-        w = sgd()
-        w_s.append(w)
-        
-    for trial, w in enumerate(w_s):
-        print(f'{trial=} {w}')
-        
 rng = np.random.default_rng()
+
+def main():
+    w = rng.uniform(low=-1e2, high=1e2, size=3)
+    starting_w = w.copy()
+    for i in range(10):
+        q = actionValueFunction(w)
+        pi = Policy(q)
+        w = sgd(policy=pi)
+    print(starting_w)
+    print(w)
     
-def sgd(tolerance=1e-2):
+def sgd(policy, tolerance=1e-2, episode_length=1000):
     w = rng.uniform(low=-1e2, high=1e2, size=3)
     discount_factor = 1
     
-    update_count = 1
-    episode_count = 1
+    update_count = 0
+    episode_count = 0
     while True:
-        epi = Episode()
+        epi = Episode(policy, episode_length)
+        episode_count += 1
         old_w = w.copy()
         for t in range(epi.length):
             learning_rate = 1e-4 # 1/i # alpha
@@ -30,43 +33,88 @@ def sgd(tolerance=1e-2):
             update = learning_rate*(measurement - estimate)*grad
             w = w + update # w_t+1 = w_t + a[U_t-v(s_t, w_t)]*grad(v(s_t, w_t))
             update_count += 1
-        episode_count += 1
+        
         # Print progress every 100 episode
-        if episode_count%100 == 0: print(f'{update_count=} {w}')
+        # if episode_count%100 == 0: print(f'{update_count=} {w}')
+        print(f'{update_count=} {w}')
         if np.linalg.norm(old_w-w) < tolerance: return w
-            
 
-direction_logic = {
-    'right': logic.right,
-    'up': logic.up,
-    'left': logic.left,
-    'down': logic.down,
-}
-
-action_names = {
-    0: 'right',
-    1: 'up',
-    2: 'left',
-    3: 'down',
+action_space = {
+    0: logic.right,
+    1: logic.up,
+    2: logic.left,
+    3: logic.down,
 }
 
 # define winning state number as the max state number + 1
 # where max state number = 11**16-1
 WINNING_STATE = 11**16
 
-def policy(state: int):
-    '''
-    Pick an action given state.
-    Currently set to a random policy
-    '''
-    return np.random.randint(len(action_names))
+class Policy:
+    def __init__(self, q) -> None:
+        self.q = q
+    
+    def __call__(self, state: int) -> int:
+        possible_actions = get_possible_actions(state)
+        q_per_action = np.vectorize(self.q)(state, possible_actions)
+        best_action = possible_actions[np.argmax(q_per_action)]
+        return best_action
+    
+class actionValueFunction:
+    def __init__(self, w) -> None:
+        self.weight = w
+        
+    def __call__(self, state: int, action: int):
+        return q_hat(state, action, self.weight)
 
-def v_hat(state, weight: np.ndarray):
+def v_hat(state: int, weight: np.ndarray):
     if isTerminalState(state):
         return 0
     else:
         x = getFeatureVector(state)
         return weight.dot(x)
+    
+def get_possible_actions(state: int):
+    grid = stateToGrid(state)
+    all_actions = range(4)
+    possible_actions = []
+    
+    for action in all_actions:
+        next_grid, done = action_space[action](grid)
+        if done:
+            possible_actions.append(action)
+    
+    possible_actions = np.array(possible_actions)
+    return possible_actions
+    
+def get_all_next_states(state: int, action: int):
+    next_states = []
+    grid = stateToGrid(state)
+    grid, done = action_space[action](grid)
+    flat_grid = grid.flatten()
+    
+    if done:
+        for position in range(len(flat_grid)):
+            if flat_grid[position] == 0:
+                next_grid = logic.add_two(grid, position)
+                next_state = gridToState(next_grid)
+                next_states.append(next_state)
+    else:
+        next_states.append(state)
+        
+    return np.array(next_states)
+
+def q_hat(state: int, action: int, weight: np.ndarray):
+    all_next_states = get_all_next_states(state, action)
+    immediate_rewards = []
+    next_state_values = []
+    for next_state in all_next_states:
+        immediate_rewards.append(reward(state, action, next_state))
+        next_state_values.append(v_hat(next_state, weight))
+    immediate_rewards = np.array(immediate_rewards)
+    next_state_values = np.array(next_state_values)
+    
+    return np.mean(immediate_rewards+next_state_values) # E(r+v(s')) when P(s') is uniform
 
 def reward(current_state: int, current_action: int, next_state: int):
     '''
@@ -97,7 +145,7 @@ def isTerminalState(state: int):
             return False
 
 class Episode:
-    def __init__(self, max_length=1000):
+    def __init__(self, policy, max_length=1000):
         self.state_history = []
         self.action_history = []
         self.reward_history = [None]
@@ -109,6 +157,7 @@ class Episode:
         t = 0
         while not isTerminalState(s) and t < max_length:
             a = policy(s)
+            # print(a)
             self.action_history.append(a)
             s_prime = transition(s, a)
             r = reward(s, a, s_prime)
@@ -116,7 +165,8 @@ class Episode:
             t += 1
             s = s_prime
             self.state_history.append(s)
-            
+        print(stateToGrid(s))
+        
         self.length = len(self.action_history)
             
     def stateAt(self, t):
@@ -139,8 +189,7 @@ class Episode:
 
 def transition(state: int, action: int):
     grid = stateToGrid(state)
-    direction = action_names[action]
-    grid, done = direction_logic[direction](grid)
+    grid, done = action_space[action](grid)
     
     if done:
         grid = logic.add_two(grid)
@@ -155,13 +204,13 @@ def play():
         # the nested list is printed as a single line
         print(grid)
         # ask user for input
-        direction = input(f'Direction (left, right, up, down): ')
-        if direction not in direction_logic.keys():
+        direction = input(f'Direction (0 right, 1 up, 2 left, 3 down): ')
+        if direction not in action_space.keys():
             print(f'Invalid direction. Please input a valid direction.')
             continue
         # transition the grid to next state
         # done flag is used to check if the direction is a valid move
-        grid, done = direction_logic[direction](grid)
+        grid, done = action_space[direction](grid)
         if done:
             # add new tile of value 2 to random position on the grid
             grid = logic.add_two(grid)
