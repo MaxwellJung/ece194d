@@ -24,6 +24,10 @@ def sgd(policy, tolerance, episode_length=2048):
     
     update_count = 0
     episode_count = 0
+    stats = {'win': 0,
+             'loss': 0,
+             'incomplete': 0,}
+    
     while True:
         epi = Episode(policy, episode_length)
         episode_count += 1
@@ -38,11 +42,16 @@ def sgd(policy, tolerance, episode_length=2048):
             update_count += 1
         
         # Print progress every 250 episodes
-        if episode_count%250 == 0: print(f'{episode_count=} {update_count=} \n{w}')
+        if episode_count%250 == 0:
+            print(f'{episode_count=} {update_count=} \n{w}')
+            print(f'{stats} win_rate={stats["win"]/episode_count:.2%}')
         if np.linalg.norm(old_w-w) < tolerance:
             print(f'Final convergence: {episode_count=} {update_count=} \n{w}')
             return w
-
+        
+        # Record stats:
+        stats[epi.result] += 1
+        
 action_space = {
     0: logic.right,
     1: logic.up,
@@ -140,7 +149,7 @@ def isTerminalState(state: int):
             return False
 
 class Episode:
-    def __init__(self, policy, max_length=2048):
+    def __init__(self, policy, max_length):
         self.state_history = []
         self.action_history = []
         self.reward_history = [None]
@@ -163,6 +172,15 @@ class Episode:
             self.state_history.append(s)
         
         self.length = len(self.action_history)
+        
+        final_state = self.state_history[-1]
+        if final_state == WINNING_STATE:
+            self.result = 'win'
+        else:
+            if logic.game_state(stateToGrid(final_state)) == 'lose':
+                self.result = 'loss'
+            else:
+                self.result = 'incomplete'
             
     def stateAt(self, t):
         if 0 <= t < len(self.state_history):
