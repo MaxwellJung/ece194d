@@ -1,27 +1,44 @@
-from typing import Any
 import numpy as np
 import logic
 import math
+import logging
 
+# numpy config
 rng = np.random.default_rng()
 np.set_printoptions(precision=4)
 
+# logging config
+logging.basicConfig(level=logging.INFO, 
+                    format="%(message)s",
+                    handlers=[
+                        logging.FileHandler("info.log", mode='w'),
+                        logging.StreamHandler()],
+                    )
+
 def main():
-    w_star = policy_iteration(tolerance=1e-3)
-    print(w_star)
+    w_star = policy_iteration(tolerance=1e-2)
+    logging.info(w_star)
 
 def policy_iteration(tolerance):
     w = rng.uniform(low=-1e2, high=1e2, size=len(getFeatureVector(gridToState(logic.new_game(4)))))
     while True:
         old_w = w.copy()
         pi = Policy(weight=w)
-        w = sgd(policy=pi, tolerance=1e-2)
+        w = sgd(policy=pi, tolerance=1e-3)
         if np.linalg.norm(old_w-w) < tolerance:
             return w
     
 def sgd(policy, tolerance, episode_length=2048):
+    def print_status():
+        logging.info(f'{episode_count=} {update_count=} \n{w}')
+        logging.info(f'{stats} win_rate={stats["win"]/episode_count:.2%} average_steps={update_count/episode_count:.2f}')
+        start_state = rng.integers(WINNING_STATE)
+        logging.info(stateToGrid(start_state))
+        logging.info(action_space[policy(start_state)])
+        logging.info(v_hat(start_state, w))
+    
     w = rng.uniform(low=-1e2, high=1e2, size=len(policy.weight))
-    discount = 1
+    discount = 0.9
     lamb = 0.5
     
     update_count = 0
@@ -48,18 +65,15 @@ def sgd(policy, tolerance, episode_length=2048):
         # Record stats:
         stats[epi.result] += 1
         
-        # print(f'{episode_count=} {update_count=} \n{w}')
+        # logging.info(f'{episode_count=} {update_count=} \n{w}')
         # Print progress every 250 episodes
         if episode_count%250 == 0:
-            print(f'{episode_count=} {update_count=} \n{w}')
-            print(f'{stats} win_rate={stats["win"]/episode_count:.2%}')
+            print_status()
         if np.linalg.norm(old_w-w) < tolerance:
-            print(f'------------------------Final convergence------------------------')
-            print(f'{episode_count=} {update_count=} \n{w}')
-            print(f'{stats} win_rate={stats["win"]/episode_count:.2%}')
-            print(f'-----------------------------------------------------------------')
+            logging.info(f'------------------------Final convergence------------------------')
+            print_status()
+            logging.info(f'-----------------------------------------------------------------')
             break
-        
     return w
         
 action_space = {
@@ -82,9 +96,9 @@ class Policy:
         q_per_action = [q_hat(action=action, state=state, weight=self.weight) \
                         for action in possible_actions]
         best_action = possible_actions[np.argmax(q_per_action)]
-        # print(possible_actions)
-        # print(q_per_action)
-        # print(best_action)
+        # logging.info(possible_actions)
+        # logging.info(q_per_action)
+        # logging.info(best_action)
         return best_action
         # return rng.integers(4)
 
@@ -100,7 +114,7 @@ def q_hat(action: int, state: int, weight: np.ndarray):
     rewards = [reward(next_state=next_state, current_state=state, current_action=action) \
              + v_hat(state=next_state, weight=weight) \
                for next_state in all_next_states]
-    # print(rewards)
+    # logging.info(rewards)
     return np.mean(rewards) # E(r+v(s')) when P(s') is uniform
     
 def get_possible_actions(state: int):
@@ -138,16 +152,16 @@ def reward(next_state: int, current_state: int, current_action: int):
     '''
     # reward winning
     if next_state == WINNING_STATE:
-        return +10000
+        return +1e3
     
     if 0 <= next_state < WINNING_STATE:
         grid = stateToGrid(next_state)
         # punish losing or choosing an action that does nothing
         if logic.game_state(grid) == 'lose' or current_state == next_state:
-            return -10000
+            return -1e3
         # punish valid moves by -1
         else:
-            return -1
+            return 0
         
 def isTerminalState(state: int):
     if state == WINNING_STATE:
@@ -227,11 +241,11 @@ def play():
         # show grid
         # each row is printed on a new line because otherwise, 
         # the nested list is printed as a single line
-        print(grid)
+        logging.info(grid)
         # ask user for input
         direction = input(f'Direction (0 right, 1 up, 2 left, 3 down): ')
         if direction not in action_space.keys():
-            print(f'Invalid direction. Please input a valid direction.')
+            logging.info(f'Invalid direction. Please input a valid direction.')
             continue
         # transition the grid to next state
         # done flag is used to check if the direction is a valid move
@@ -240,10 +254,10 @@ def play():
             # add new tile of value 2 to random position on the grid
             grid = logic.add_two(grid)
             if logic.game_state(grid) == 'win':
-                print('Win')
+                logging.info('Win')
                 break
             if logic.game_state(grid) == 'lose':
-                print('Lose')
+                logging.info('Lose')
                 break
 
 def stateToGrid(state: int, winning_value=2048):
@@ -374,7 +388,7 @@ def neighbor_difference(grid: np.ndarray):
     grid = np.log2(grid)
     row_diff = grid[:-1] - grid[1:]
     col_diff = grid[:, :-1] - grid[:, 1:]
-    return np.sum(np.abs(row_diff)) + np.sum(np.abs(col_diff))
+    return np.sum(np.square(row_diff)) + np.sum(np.square(col_diff))
 
 
 
