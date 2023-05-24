@@ -4,6 +4,7 @@ import logic
 import math
 
 rng = np.random.default_rng()
+np.set_printoptions(precision=4)
 
 def main():
     w_star = policy_iteration(tolerance=1e-3)
