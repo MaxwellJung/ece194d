@@ -311,7 +311,8 @@ def getFeatureVector(state: int):
                   fullness(grid),
                   distance_to_corner(grid),
                   center_sum(grid),
-                  perimeter_sum(grid),
+                  corner_sum(grid),
+                  edge_sum(grid),
                   neighbor_difference(grid),])
     
     return X
@@ -345,15 +346,23 @@ def distance_to_corner(grid: np.ndarray):
 
 def center_sum(grid: np.ndarray):
     '''
-    Sum of center values (center = tiles excluding the edges)
+    Sum of center tiles (center = tiles excluding the edges)
     '''
     return np.sum(grid[1:-1, 1:-1])
 
-def perimeter_sum(grid: np.ndarray):
+def corner_sum(grid: np.ndarray):
     '''
-    Sum of center values (center = tiles excluding the edges)
+    Sum of corner tiles
     '''
-    return np.sum(grid)-center_sum(grid)
+    row_count = grid.shape[0]
+    col_count = grid.shape[1]
+    return np.sum([grid[0, 0], grid[row_count-1, 0], grid[0, col_count-1], grid[row_count-1, col_count-1]])
+
+def edge_sum(grid: np.ndarray):
+    '''
+    Sum of edge tiles
+    '''
+    return np.sum(grid)-center_sum(grid)-corner_sum(grid)
 
 def neighbor_difference(grid: np.ndarray):
     '''
@@ -364,6 +373,8 @@ def neighbor_difference(grid: np.ndarray):
     row_diff = grid[:-1] - grid[1:]
     col_diff = grid[:, :-1] - grid[:, 1:]
     return np.sum(np.abs(row_diff)) + np.sum(np.abs(col_diff))
+
+
 
 if __name__ == '__main__':
     main()
