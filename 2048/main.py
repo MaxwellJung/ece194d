@@ -6,9 +6,12 @@ import math
 rng = np.random.default_rng()
 
 def main():
+    policy_iteration()
+
+def policy_iteration():
     w = rng.uniform(low=-1e2, high=1e2, size=3)
     starting_w = w.copy()
-    for i in range(10):
+    for i in range(100):
         q = actionValueFunction(w)
         pi = Policy(q)
         w = sgd(policy=pi)
@@ -74,6 +77,18 @@ def v_hat(state: int, weight: np.ndarray):
         x = getFeatureVector(state)
         return weight.dot(x)
     
+def q_hat(state: int, action: int, weight: np.ndarray):
+    all_next_states = get_all_next_states(state, action)
+    immediate_rewards = []
+    next_state_values = []
+    for next_state in all_next_states:
+        immediate_rewards.append(reward(state, action, next_state))
+        next_state_values.append(v_hat(next_state, weight))
+    immediate_rewards = np.array(immediate_rewards)
+    next_state_values = np.array(next_state_values)
+    
+    return np.mean(immediate_rewards+next_state_values) # E(r+v(s')) when P(s') is uniform
+    
 def get_possible_actions(state: int):
     grid = stateToGrid(state)
     all_actions = range(4)
@@ -103,18 +118,6 @@ def get_all_next_states(state: int, action: int):
         next_states.append(state)
         
     return np.array(next_states)
-
-def q_hat(state: int, action: int, weight: np.ndarray):
-    all_next_states = get_all_next_states(state, action)
-    immediate_rewards = []
-    next_state_values = []
-    for next_state in all_next_states:
-        immediate_rewards.append(reward(state, action, next_state))
-        next_state_values.append(v_hat(next_state, weight))
-    immediate_rewards = np.array(immediate_rewards)
-    next_state_values = np.array(next_state_values)
-    
-    return np.mean(immediate_rewards+next_state_values) # E(r+v(s')) when P(s') is uniform
 
 def reward(current_state: int, current_action: int, next_state: int):
     '''
@@ -165,7 +168,6 @@ class Episode:
             t += 1
             s = s_prime
             self.state_history.append(s)
-        print(stateToGrid(s))
         
         self.length = len(self.action_history)
             
