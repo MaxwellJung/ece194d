@@ -54,8 +54,10 @@ def sgd(policy, tolerance, episode_length=2048):
             print(f'{episode_count=} {update_count=} \n{w}')
             print(f'{stats} win_rate={stats["win"]/episode_count:.2%}')
         if np.linalg.norm(old_w-w) < tolerance:
-            print(f'Final convergence: {episode_count=} {update_count=} \n{w}')
+            print(f'------------------------Final convergence------------------------')
+            print(f'{episode_count=} {update_count=} \n{w}')
             print(f'{stats} win_rate={stats["win"]/episode_count:.2%}')
+            print(f'-----------------------------------------------------------------')
             break
         
     return w
