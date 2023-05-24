@@ -4,6 +4,7 @@ import logic
 import math
 
 rng = np.random.default_rng()
+np.set_printoptions(precision=4)
 
 def main():
     w_star = policy_iteration(tolerance=1e-3)
@@ -20,7 +21,8 @@ def policy_iteration(tolerance):
     
 def sgd(policy, tolerance, episode_length=2048):
     w = rng.uniform(low=-1e2, high=1e2, size=len(policy.weight))
-    discount_factor = 1
+    discount = 1
+    lamb = 0.5
     
     update_count = 0
     episode_count = 0
@@ -32,25 +34,31 @@ def sgd(policy, tolerance, episode_length=2048):
         epi = Episode(policy, episode_length)
         episode_count += 1
         old_w = w.copy()
+        z = 0
         for t in range(epi.length):
             learning_rate = 1e-7 # alpha
-            measurement = epi.rewardAt(t+1) + discount_factor*v_hat(epi.stateAt(t+1), w) # U_t
+            measurement = epi.rewardAt(t+1) + discount*v_hat(epi.stateAt(t+1), w) # U_t
             estimate = v_hat(epi.stateAt(t), w)
             grad = getFeatureVector(epi.stateAt(t)) # gradient of (W^T)X is X
-            update = learning_rate*(measurement - estimate)*grad
+            z = lamb*discount*z + grad
+            update = learning_rate*(measurement - estimate)*z
             w = w + update # w_t+1 = w_t + a[U_t-v(s_t, w_t)]*grad(v(s_t, w_t))
             update_count += 1
             
         # Record stats:
         stats[epi.result] += 1
         
+        # print(f'{episode_count=} {update_count=} \n{w}')
         # Print progress every 250 episodes
         if episode_count%250 == 0:
             print(f'{episode_count=} {update_count=} \n{w}')
             print(f'{stats} win_rate={stats["win"]/episode_count:.2%}')
         if np.linalg.norm(old_w-w) < tolerance:
             print(f'Final convergence: {episode_count=} {update_count=} \n{w}')
-            return w
+            print(f'{stats} win_rate={stats["win"]/episode_count:.2%}')
+            break
+        
+    return w
         
 action_space = {
     0: logic.right,
@@ -71,8 +79,10 @@ class Policy:
         possible_actions = get_possible_actions(state)
         q_per_action = [q_hat(action=action, state=state, weight=self.weight) \
                         for action in possible_actions]
-        # print(q_per_action)
         best_action = possible_actions[np.argmax(q_per_action)]
+        # print(possible_actions)
+        # print(q_per_action)
+        # print(best_action)
         return best_action
         # return rng.integers(4)
 
