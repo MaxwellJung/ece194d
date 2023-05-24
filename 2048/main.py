@@ -40,6 +40,9 @@ def sgd(policy, tolerance, episode_length=2048):
             update = learning_rate*(measurement - estimate)*grad
             w = w + update # w_t+1 = w_t + a[U_t-v(s_t, w_t)]*grad(v(s_t, w_t))
             update_count += 1
+            
+        # Record stats:
+        stats[epi.result] += 1
         
         # Print progress every 250 episodes
         if episode_count%250 == 0:
@@ -48,9 +51,6 @@ def sgd(policy, tolerance, episode_length=2048):
         if np.linalg.norm(old_w-w) < tolerance:
             print(f'Final convergence: {episode_count=} {update_count=} \n{w}')
             return w
-        
-        # Record stats:
-        stats[epi.result] += 1
         
 action_space = {
     0: logic.right,
