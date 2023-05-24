@@ -10,7 +10,7 @@ def main():
     print(w_star)
 
 def policy_iteration(tolerance):
-    w = rng.uniform(low=-1e2, high=1e2, size=6)
+    w = rng.uniform(low=-1e2, high=1e2, size=len(getFeatureVector(gridToState(logic.new_game(4)))))
     while True:
         old_w = w.copy()
         pi = Policy(weight=w)
@@ -37,8 +37,8 @@ def sgd(policy, tolerance, episode_length=2048):
             w = w + update # w_t+1 = w_t + a[U_t-v(s_t, w_t)]*grad(v(s_t, w_t))
             update_count += 1
         
-        # Print progress every 500 episodes
-        # if episode_count%500 == 0: print(f'{episode_count=} {update_count=} \n{w}')
+        # Print progress every 250 episodes
+        if episode_count%250 == 0: print(f'{episode_count=} {update_count=} \n{w}')
         if np.linalg.norm(old_w-w) < tolerance:
             print(f'Final convergence: {episode_count=} {update_count=} \n{w}')
             return w
@@ -277,12 +277,16 @@ def getFeatureVector(state: int):
     '''
     grid = stateToGrid(state)
     
-    return np.array([mean(grid),
-                     std(grid),
-                     fullness(grid),
-                     distance_to_corner(grid),
-                     center_sum(grid),
-                     perimeter_sum(grid)])
+    X = np.array([1,
+                  mean(grid),
+                  std(grid),
+                  fullness(grid),
+                  distance_to_corner(grid),
+                  center_sum(grid),
+                  perimeter_sum(grid),
+                  neighbor_difference(grid),])
+    
+    return X
 
 def mean(grid: np.ndarray):
     '''
@@ -322,6 +326,16 @@ def perimeter_sum(grid: np.ndarray):
     Sum of center values (center = tiles excluding the edges)
     '''
     return np.sum(grid)-center_sum(grid)
+
+def neighbor_difference(grid: np.ndarray):
+    '''
+    Sum of absolute value of differences between neighboring tiles
+    '''
+    grid[grid==0] = 1
+    grid = np.log2(grid)
+    row_diff = grid[:-1] - grid[1:]
+    col_diff = grid[:, :-1] - grid[:, 1:]
+    return np.sum(np.abs(row_diff)) + np.sum(np.abs(col_diff))
 
 if __name__ == '__main__':
     main()
