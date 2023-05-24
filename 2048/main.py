@@ -8,17 +8,16 @@ rng = np.random.default_rng()
 def main():
     policy_iteration()
 
-def policy_iteration():
+def policy_iteration(tolerance=1e-2):
     w = rng.uniform(low=-1e2, high=1e2, size=3)
-    starting_w = w.copy()
-    for i in range(100):
-        q = actionValueFunction(w)
-        pi = Policy(q)
+    while True:
+        old_w = w.copy()
+        pi = Policy(weight=w)
         w = sgd(policy=pi)
-    print(starting_w)
-    print(w)
+        if np.linalg.norm(old_w-w) < tolerance:
+            return w
     
-def sgd(policy, tolerance=1e-2, episode_length=1000):
+def sgd(policy, tolerance=1e-2, episode_length=2048):
     w = rng.uniform(low=-1e2, high=1e2, size=3)
     discount_factor = 1
     
@@ -29,7 +28,7 @@ def sgd(policy, tolerance=1e-2, episode_length=1000):
         episode_count += 1
         old_w = w.copy()
         for t in range(epi.length):
-            learning_rate = 1e-4 # 1/i # alpha
+            learning_rate = 1e-5 # alpha
             measurement = epi.rewardAt(t+1) + discount_factor*v_hat(epi.stateAt(t+1), w) # U_t
             estimate = v_hat(epi.stateAt(t), w)
             grad = getFeatureVector(epi.stateAt(t)) # gradient of (W^T)X is X
@@ -37,9 +36,8 @@ def sgd(policy, tolerance=1e-2, episode_length=1000):
             w = w + update # w_t+1 = w_t + a[U_t-v(s_t, w_t)]*grad(v(s_t, w_t))
             update_count += 1
         
-        # Print progress every 100 episode
-        # if episode_count%100 == 0: print(f'{update_count=} {w}')
-        print(f'{update_count=} {w}')
+        # Print progress every 10 episodes
+        if episode_count%10 == 0: print(f'{episode_count=} {update_count=} {w}')
         if np.linalg.norm(old_w-w) < tolerance: return w
 
 action_space = {
@@ -54,21 +52,16 @@ action_space = {
 WINNING_STATE = 11**16
 
 class Policy:
-    def __init__(self, q) -> None:
-        self.q = q
+    def __init__(self, weight) -> None:
+        self.weight = weight
     
     def __call__(self, state: int) -> int:
         possible_actions = get_possible_actions(state)
-        q_per_action = np.vectorize(self.q)(state, possible_actions)
+        q_per_action = [q_hat(action=action, state=state, weight=self.weight) \
+                        for action in possible_actions]
         best_action = possible_actions[np.argmax(q_per_action)]
         return best_action
-    
-class actionValueFunction:
-    def __init__(self, w) -> None:
-        self.weight = w
-        
-    def __call__(self, state: int, action: int):
-        return q_hat(state, action, self.weight)
+        # return rng.integers(4)
 
 def v_hat(state: int, weight: np.ndarray):
     if isTerminalState(state):
@@ -77,17 +70,13 @@ def v_hat(state: int, weight: np.ndarray):
         x = getFeatureVector(state)
         return weight.dot(x)
     
-def q_hat(state: int, action: int, weight: np.ndarray):
+def q_hat(action: int, state: int, weight: np.ndarray):
     all_next_states = get_all_next_states(state, action)
-    immediate_rewards = []
-    next_state_values = []
-    for next_state in all_next_states:
-        immediate_rewards.append(reward(state, action, next_state))
-        next_state_values.append(v_hat(next_state, weight))
-    immediate_rewards = np.array(immediate_rewards)
-    next_state_values = np.array(next_state_values)
+    rewards = [reward(next_state=next_state, current_state=state, current_action=action) \
+             + reward(next_state=next_state, current_state=state, current_action=action) \
+               for next_state in all_next_states]
     
-    return np.mean(immediate_rewards+next_state_values) # E(r+v(s')) when P(s') is uniform
+    return np.mean(rewards) # E(r+v(s')) when P(s') is uniform
     
 def get_possible_actions(state: int):
     grid = stateToGrid(state)
@@ -98,8 +87,7 @@ def get_possible_actions(state: int):
         next_grid, done = action_space[action](grid)
         if done:
             possible_actions.append(action)
-    
-    possible_actions = np.array(possible_actions)
+            
     return possible_actions
     
 def get_all_next_states(state: int, action: int):
@@ -119,19 +107,19 @@ def get_all_next_states(state: int, action: int):
         
     return np.array(next_states)
 
-def reward(current_state: int, current_action: int, next_state: int):
+def reward(next_state: int, current_state: int, current_action: int):
     '''
     Calculate reward based on current state, current action, and next state
     '''
     # reward winning
     if next_state == WINNING_STATE:
-        return +10
+        return +10000
     
     if 0 <= next_state < WINNING_STATE:
         grid = stateToGrid(next_state)
         # punish losing or choosing an action that does nothing
         if logic.game_state(grid) == 'lose' or current_state == next_state:
-            return -10
+            return -10000
         # punish valid moves by -1
         else:
             return -1
@@ -148,22 +136,23 @@ def isTerminalState(state: int):
             return False
 
 class Episode:
-    def __init__(self, policy, max_length=1000):
+    def __init__(self, policy, max_length=2048):
         self.state_history = []
         self.action_history = []
         self.reward_history = [None]
         
-        initial_grid = logic.new_game(4)
-        s = gridToState(initial_grid)
+        while True:
+            s = rng.integers(WINNING_STATE)
+            if not isTerminalState(s):
+                break
         self.state_history.append(s)
         
         t = 0
         while not isTerminalState(s) and t < max_length:
             a = policy(s)
-            # print(a)
             self.action_history.append(a)
             s_prime = transition(s, a)
-            r = reward(s, a, s_prime)
+            r = reward(s_prime, s, a)
             self.reward_history.append(r)
             t += 1
             s = s_prime
