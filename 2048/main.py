@@ -6,19 +6,20 @@ import math
 rng = np.random.default_rng()
 
 def main():
-    policy_iteration()
+    w_star = policy_iteration(tolerance=1e-3)
+    print(w_star)
 
-def policy_iteration(tolerance=1e-2):
-    w = rng.uniform(low=-1e2, high=1e2, size=3)
+def policy_iteration(tolerance):
+    w = rng.uniform(low=-1e2, high=1e2, size=6)
     while True:
         old_w = w.copy()
         pi = Policy(weight=w)
-        w = sgd(policy=pi)
+        w = sgd(policy=pi, tolerance=1e-2)
         if np.linalg.norm(old_w-w) < tolerance:
             return w
     
-def sgd(policy, tolerance=1e-2, episode_length=2048):
-    w = rng.uniform(low=-1e2, high=1e2, size=3)
+def sgd(policy, tolerance, episode_length=2048):
+    w = rng.uniform(low=-1e2, high=1e2, size=len(policy.weight))
     discount_factor = 1
     
     update_count = 0
@@ -28,7 +29,7 @@ def sgd(policy, tolerance=1e-2, episode_length=2048):
         episode_count += 1
         old_w = w.copy()
         for t in range(epi.length):
-            learning_rate = 1e-5 # alpha
+            learning_rate = 1e-7 # alpha
             measurement = epi.rewardAt(t+1) + discount_factor*v_hat(epi.stateAt(t+1), w) # U_t
             estimate = v_hat(epi.stateAt(t), w)
             grad = getFeatureVector(epi.stateAt(t)) # gradient of (W^T)X is X
@@ -36,9 +37,11 @@ def sgd(policy, tolerance=1e-2, episode_length=2048):
             w = w + update # w_t+1 = w_t + a[U_t-v(s_t, w_t)]*grad(v(s_t, w_t))
             update_count += 1
         
-        # Print progress every 10 episodes
-        if episode_count%10 == 0: print(f'{episode_count=} {update_count=} {w}')
-        if np.linalg.norm(old_w-w) < tolerance: return w
+        # Print progress every 500 episodes
+        # if episode_count%500 == 0: print(f'{episode_count=} {update_count=} \n{w}')
+        if np.linalg.norm(old_w-w) < tolerance:
+            print(f'Final convergence: {episode_count=} {update_count=} \n{w}')
+            return w
 
 action_space = {
     0: logic.right,
@@ -59,6 +62,7 @@ class Policy:
         possible_actions = get_possible_actions(state)
         q_per_action = [q_hat(action=action, state=state, weight=self.weight) \
                         for action in possible_actions]
+        # print(q_per_action)
         best_action = possible_actions[np.argmax(q_per_action)]
         return best_action
         # return rng.integers(4)
@@ -73,9 +77,9 @@ def v_hat(state: int, weight: np.ndarray):
 def q_hat(action: int, state: int, weight: np.ndarray):
     all_next_states = get_all_next_states(state, action)
     rewards = [reward(next_state=next_state, current_state=state, current_action=action) \
-             + reward(next_state=next_state, current_state=state, current_action=action) \
+             + v_hat(state=next_state, weight=weight) \
                for next_state in all_next_states]
-    
+    # print(rewards)
     return np.mean(rewards) # E(r+v(s')) when P(s') is uniform
     
 def get_possible_actions(state: int):
@@ -275,7 +279,10 @@ def getFeatureVector(state: int):
     
     return np.array([mean(grid),
                      std(grid),
-                     fullness(grid)])
+                     fullness(grid),
+                     distance_to_corner(grid),
+                     center_sum(grid),
+                     perimeter_sum(grid)])
 
 def mean(grid: np.ndarray):
     '''
@@ -294,6 +301,27 @@ def fullness(grid: np.ndarray):
     Calculates how full the grid is
     '''
     return np.count_nonzero(grid)
+
+def distance_to_corner(grid: np.ndarray):
+    '''
+    Calculates manhattan distance of the largest tile to the nearest corner
+    '''
+    row_count, col_count = grid.shape
+    corners = np.array([(0,0), (0, col_count-1), (row_count-1, 0), (row_count-1, col_count-1)])
+    max_pos = np.unravel_index(np.argmax(grid), grid.shape)
+    return np.min(np.linalg.norm(corners-max_pos, ord=1, axis=1))
+
+def center_sum(grid: np.ndarray):
+    '''
+    Sum of center values (center = tiles excluding the edges)
+    '''
+    return np.sum(grid[1:-1, 1:-1])
+
+def perimeter_sum(grid: np.ndarray):
+    '''
+    Sum of center values (center = tiles excluding the edges)
+    '''
+    return np.sum(grid)-center_sum(grid)
 
 if __name__ == '__main__':
     main()
