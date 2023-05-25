@@ -20,9 +20,7 @@ import numpy as np
 # 1 mark for creating the correct matrix
 
 def new_game(n):
-    matrix = []
-    for i in range(n):
-        matrix.append([0] * n)
+    matrix = np.zeros((n, n))
     matrix = add_two(matrix)
     matrix = add_two(matrix)
     matrix = np.array(matrix)
@@ -37,13 +35,15 @@ def new_game(n):
 # Must ensure that it is created on a zero entry
 # 1 mark for creating the correct loop
 
-def add_two(mat):
-    a = random.randint(0, len(mat)-1)
-    b = random.randint(0, len(mat)-1)
-    while mat[a][b] != 0:
-        a = random.randint(0, len(mat)-1)
-        b = random.randint(0, len(mat)-1)
-    mat[a][b] = 2
+def add_two(mat: np.ndarray, position=None):
+    flat = mat.flatten()
+    if position is None:
+        while True:
+            position = np.random.randint(len(flat))
+            if flat[position] == 0:
+                break
+    flat[position] = 2
+    mat = flat.reshape((4,4))
     return mat
 
 ###########
