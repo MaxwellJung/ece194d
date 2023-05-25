@@ -88,11 +88,15 @@ action_space = {
 WINNING_STATE = 11**16
 
 class Policy:
-    def __init__(self, weight) -> None:
+    def __init__(self, weight, epsilon=1) -> None:
         self.weight = weight
+        self.epsilon = epsilon
     
     def __call__(self, state: int) -> int:
         possible_actions = get_possible_actions(state)
+        if rng.random() < self.epsilon:
+            return possible_actions[rng.integers(len(possible_actions))]
+        
         q_per_action = [q_hat(action=action, state=state, weight=self.weight) \
                         for action in possible_actions]
         best_action = possible_actions[np.argmax(q_per_action)]
