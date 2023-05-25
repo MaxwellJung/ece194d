@@ -12,7 +12,7 @@ def policy_iteration(tolerance=1e-2):
     while True:
         old_w = w.copy()
         pi = Policy(weight=w)
-        w = sgd(policy=pi)
+        w = sgd(policy=pi, tolerance=1e-3)
         if np.linalg.norm(old_w-w) < tolerance:
             return w
     
