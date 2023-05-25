@@ -321,8 +321,7 @@ def getFeatureVector(state: int):
     '''
     grid = stateToGrid(state)
     
-    X = np.array([1,
-                  mean(grid),
+    X = np.array([mean(grid),
                   std(grid),
                   fullness(grid),
                   distance_to_corner(grid),
