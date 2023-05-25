@@ -16,9 +16,10 @@ def policy_iteration(tolerance=1e-2):
         if np.linalg.norm(old_w-w) < tolerance:
             return w
     
-def sgd(policy, tolerance=1e-2, episode_length=2048):
-    w = rng.uniform(low=-1e2, high=1e2, size=7)
-    discount_factor = 1
+def sgd(policy, tolerance, episode_length=2048):
+    w = rng.uniform(low=-1e2, high=1e2, size=len(policy.weight))
+    discount = 1
+    lamb = 0.5
     
     update_count = 0
     episode_count = 0
@@ -26,13 +27,15 @@ def sgd(policy, tolerance=1e-2, episode_length=2048):
         epi = Episode(policy, episode_length)
         episode_count += 1
         old_w = w.copy()
+        Z = 0 # discounted sum of previous gradients
         for t in range(epi.length):
-            learning_rate = 1e-7 # alpha
-            measurement = epi.rewardAt(t+1) + discount_factor*v_hat(epi.stateAt(t+1), w) # U_t
+            learning_rate = 1e-5 # alpha
+            measurement = epi.rewardAt(t+1) + discount*v_hat(epi.stateAt(t+1), w) # U_t
             estimate = v_hat(epi.stateAt(t), w)
             grad = getFeatureVector(epi.stateAt(t)) # gradient of (W^T)X is X
-            update = learning_rate*(measurement - estimate)*grad
-            w = w + update # w_t+1 = w_t + a[U_t-v(s_t, w_t)]*grad(v(s_t, w_t))
+            Z = lamb*discount*Z + grad
+            update = learning_rate*(measurement - estimate)*Z
+            w = w + update # w_t+1 = w_t + a[U_t-v(s_t, w_t)]*Z
             update_count += 1
         
         # Print progress every 10 episodes
