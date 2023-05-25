@@ -28,16 +28,20 @@ def policy_iteration(tolerance):
         if np.linalg.norm(old_w-w) < tolerance:
             return w
     
-def sgd(policy, tolerance, episode_length=2048):
+def sgd(seed_weight, policy, tolerance, episode_length=2048):
     def print_status():
         logging.info(f'{episode_count=} {update_count=} \n{w}')
         logging.info(f'{stats} win_rate={stats["win"]/episode_count:.2%} average_steps={update_count/episode_count:.2f}')
-        start_state = rng.integers(WINNING_STATE)
+
+        while True:
+            start_state = rng.integers(WINNING_STATE)
+            if not isTerminalState(start_state):
+                break
         logging.info(stateToGrid(start_state))
         logging.info(action_space[policy(start_state)])
         logging.info(v_hat(start_state, w))
     
-    w = rng.uniform(low=-1e2, high=1e2, size=len(policy.weight))
+    w = seed_weight.copy()
     discount = 0.9
     lamb = 0.5
     
@@ -53,7 +57,7 @@ def sgd(policy, tolerance, episode_length=2048):
         old_w = w.copy()
         z = 0
         for t in range(epi.length):
-            learning_rate = 1e-7 # alpha
+            learning_rate = 1e-6/episode_count # alpha
             measurement = epi.rewardAt(t+1) + discount*v_hat(epi.stateAt(t+1), w) # U_t
             estimate = v_hat(epi.stateAt(t), w)
             grad = getFeatureVector(epi.stateAt(t)) # gradient of (W^T)X is X
