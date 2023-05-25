@@ -11,7 +11,7 @@ np.set_printoptions(precision=4)
 logging.basicConfig(level=logging.INFO, 
                     format="%(message)s",
                     handlers=[
-                        logging.FileHandler("info.log", mode='w'),
+                        logging.FileHandler("info.log"),
                         logging.StreamHandler()],
                     )
 
@@ -23,8 +23,8 @@ def policy_iteration(tolerance):
     w = rng.uniform(low=-1e2, high=1e2, size=len(getFeatureVector(gridToState(logic.new_game(4)))))
     while True:
         old_w = w.copy()
-        pi = Policy(weight=w)
-        w = sgd(policy=pi, tolerance=1e-3)
+        pi = Policy(weight=w, epsilon=0.1)
+        w = sgd(seed_weight=w, policy=pi, tolerance=1e-3)
         if np.linalg.norm(old_w-w) < tolerance:
             return w
     
