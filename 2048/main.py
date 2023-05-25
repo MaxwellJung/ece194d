@@ -180,10 +180,11 @@ class Episode:
         self.action_history = []
         self.reward_history = [None]
         
-        while True:
-            s = rng.integers(WINNING_STATE)
-            if not isTerminalState(s):
-                break
+        # s = rng.integers(WINNING_STATE)
+        # grid = stateToGrid(s)
+        # for i in range(8):
+        #     grid[rng.integers(grid.shape[0])][rng.integers(grid.shape[1])] = 0
+        s = gridToState(logic.new_game(4))
         self.state_history.append(s)
         
         t = 0
