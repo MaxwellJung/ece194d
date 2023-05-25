@@ -17,7 +17,7 @@ def policy_iteration(tolerance=1e-2):
             return w
     
 def sgd(policy, tolerance=1e-2, episode_length=2048):
-    w = rng.uniform(low=-1e2, high=1e2, size=3)
+    w = rng.uniform(low=-1e2, high=1e2, size=7)
     discount_factor = 1
     
     update_count = 0
@@ -27,7 +27,7 @@ def sgd(policy, tolerance=1e-2, episode_length=2048):
         episode_count += 1
         old_w = w.copy()
         for t in range(epi.length):
-            learning_rate = 1e-5 # alpha
+            learning_rate = 1e-7 # alpha
             measurement = epi.rewardAt(t+1) + discount_factor*v_hat(epi.stateAt(t+1), w) # U_t
             estimate = v_hat(epi.stateAt(t), w)
             grad = getFeatureVector(epi.stateAt(t)) # gradient of (W^T)X is X
@@ -272,9 +272,13 @@ def getFeatureVector(state: int):
     '''
     grid = stateToGrid(state)
     
-    return np.array([mean(grid),
+    return np.array([1,
+                     mean(grid),
                      std(grid),
-                     fullness(grid)])
+                     fullness(grid),
+                     distance_to_corner(grid),
+                     center_sum(grid),
+                     perimeter_sum(grid)])
 
 def mean(grid: np.ndarray):
     '''
@@ -293,6 +297,27 @@ def fullness(grid: np.ndarray):
     Calculates how full the grid is
     '''
     return np.count_nonzero(grid)
+
+def distance_to_corner(grid: np.ndarray):
+    '''
+    Calculates manhattan distance of the largest tile to the nearest corner
+    '''
+    row_count, col_count = grid.shape
+    corners = np.array([(0,0), (0, col_count-1), (row_count-1, 0), (row_count-1, col_count-1)])
+    max_pos = np.unravel_index(np.argmax(grid), grid.shape)
+    return np.min(np.linalg.norm(corners-max_pos, ord=1, axis=1))
+
+def center_sum(grid: np.ndarray):
+    '''
+    Sum of center values (center = tiles excluding the edges)
+    '''
+    return np.sum(grid[1:-1, 1:-1])
+
+def perimeter_sum(grid: np.ndarray):
+    '''
+    Sum of center values (center = tiles excluding the edges)
+    '''
+    return np.sum(grid)-center_sum(grid)
 
 if __name__ == '__main__':
     main()
