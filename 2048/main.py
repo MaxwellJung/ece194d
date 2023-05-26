@@ -72,8 +72,7 @@ def v_hat(state: int, weight: np.ndarray):
 def q_hat(action: int, state: int, weight: np.ndarray):
     all_next_states = get_all_next_states(state, action)
     rewards = [reward(next_state=next_state, current_state=state, current_action=action) \
-             + reward(next_state=next_state, current_state=state, current_action=action) \
-               for next_state in all_next_states]
+             + v_hat(state=next_state, weight=weight) for next_state in all_next_states]
     
     return np.mean(rewards) # E(r+v(s')) when P(s') is uniform
     
@@ -112,13 +111,13 @@ def reward(next_state: int, current_state: int, current_action: int):
     '''
     # reward winning
     if next_state == WINNING_STATE:
-        return +10000
+        return +1e4
     
     if 0 <= next_state < WINNING_STATE:
         grid = stateToGrid(next_state)
         # punish losing or choosing an action that does nothing
         if logic.game_state(grid) == 'lose' or current_state == next_state:
-            return -10000
+            return -1e4
         # punish valid moves by -1
         else:
             return -1
