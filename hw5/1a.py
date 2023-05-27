@@ -91,11 +91,11 @@ def epsilon_greedy_policy(state, q_table, episilon=0.1):
         return actions[np.argmax(action_values)]
     
 
-def q_learning(alpha):
+def q_learning(alpha, max_episodes=1000):
     q_table = np.zeros((np.prod(world.shape), len(actions)))
     total_reward_history = []
     
-    for episode_count in range(500):
+    for episode_count in range(max_episodes):
         total_reward = 0
         s = start_state
         while s != end_state:
@@ -109,19 +109,44 @@ def q_learning(alpha):
         total_reward_history.append(total_reward)
             
     return q_table, total_reward_history
+
+def sarsa(alpha, max_episodes=1000):
+    q_table = np.zeros((np.prod(world.shape), len(actions)))
+    total_reward_history = []
+    
+    for episode_count in range(max_episodes):
+        total_reward = 0
+        s = start_state
+        while s != end_state:
+            a = epsilon_greedy_policy(s, q_table, episilon=0.1)
+            s_prime, r = transition(s, a)
+            a_prime = epsilon_greedy_policy(s_prime, q_table, episilon=0.1)
+            measurement = r + q_table[s_prime][a_prime]
+            estimate = q_table[s][a]
+            q_table[s][a] = q_table[s][a] + alpha*(measurement - estimate)
+            s = s_prime
+            total_reward += r
+        total_reward_history.append(total_reward)
+            
+    return q_table, total_reward_history
     
 
 def main():
-    q_table, q_learning_reward_trend = q_learning(alpha=0.1)
+    sarsa_q_table, sarsa_reward_trend = sarsa(alpha=0.05, max_episodes=5000)
+    q_learning_q_table, q_learning_reward_trend = q_learning(alpha=0.05, max_episodes=5000)
+    
+    samples = 10
+    
+    smooth_sarsa_reward_trend = np.average(np.array(sarsa_reward_trend).reshape(-1, samples), axis=1)
+    smooth_q_learning_reward_trend = np.average(np.array(q_learning_reward_trend).reshape(-1, samples), axis=1)
     
     fig, ax = plt.subplots()
-    ax.plot(range(1,len(q_learning_reward_trend)+1), q_learning_reward_trend)
+    ax.plot(range(1,len(smooth_sarsa_reward_trend)+1), smooth_sarsa_reward_trend, color='b', label='Sarsa')
+    ax.plot(range(1,len(smooth_q_learning_reward_trend)+1), smooth_q_learning_reward_trend, color='r', label='Q-learning')
 
-    ax.set(xlabel='Episodes', ylabel='Sum of rewards',
-        title='Performance')
+    ax.set(xlabel='Episodes', ylabel='Sum of rewards', title='Performance')
     ax.grid()
-
-    # fig.savefig("value_iteration_plot.png")
+    plt.legend()
     plt.show()
 
 if __name__ == '__main__':
