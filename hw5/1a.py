@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 world = [[-1]*12]*3
 cliff = [-100]*10
@@ -66,9 +67,62 @@ def transition(state, action):
     
     return next_state, reward
 
-def main():
-    print(transition(start_state, 1))
+def get_possible_actions(state):
+    possible_actions = []
+    for a, action_logic in actions.items():
+        try: next_state = action_logic(state)
+        except InvalidMoveException: continue
+        else: possible_actions.append(a)
+        
+    return possible_actions
 
+def greedy_policy(state, q_table):
+    action_values = [q_table[state][action] for action in get_possible_actions(state)]
+    return actions[np.argmax(action_values)]
+        
+    return epsilon_greedy(0.1)
+
+def epsilon_greedy_policy(state, q_table, episilon=0.1):
+    actions = get_possible_actions(state)
+    if np.random.rand(1) < episilon:
+        return actions[np.random.randint(len(actions))]
+    else:
+        action_values = [q_table[state][action] for action in actions]
+        return actions[np.argmax(action_values)]
+    
+
+def q_learning(alpha):
+    q_table = np.zeros((np.prod(world.shape), len(actions)))
+    total_reward_history = []
+    
+    for episode_count in range(500):
+        total_reward = 0
+        s = start_state
+        while s != end_state:
+            a = epsilon_greedy_policy(s, q_table, episilon=0.1)
+            s_prime, r = transition(s, a)
+            measurement = r + np.max([q_table[s_prime][a_prime] for a_prime in get_possible_actions(s_prime)])
+            estimate = q_table[s][a]
+            q_table[s][a] = q_table[s][a] + alpha*(measurement - estimate)
+            s = s_prime
+            total_reward += r
+        total_reward_history.append(total_reward)
+            
+    return q_table, total_reward_history
+    
+
+def main():
+    q_table, q_learning_reward_trend = q_learning(alpha=0.1)
+    
+    fig, ax = plt.subplots()
+    ax.plot(range(1,len(q_learning_reward_trend)+1), q_learning_reward_trend)
+
+    ax.set(xlabel='Episodes', ylabel='Sum of rewards',
+        title='Performance')
+    ax.grid()
+
+    # fig.savefig("value_iteration_plot.png")
+    plt.show()
 
 if __name__ == '__main__':
     main()
