@@ -2,10 +2,10 @@ import numpy as np
 from environment import Environment
 
 class TwntyFrtyEight(Environment):
-    winning_value = 2048
+    WINNING_VALUE = 2048
     # define winning state number as the max state number + 1
-    # where max state number = 11**16-1
-    winning_state = 11**16
+    WINNING_STATE = np.log2(WINNING_VALUE)**16
+    # map state number to board configuration
     visited_states = {}
     
     @staticmethod
@@ -158,7 +158,7 @@ class TwntyFrtyEight(Environment):
         return TwntyFrtyEight.board_to_state(TwntyFrtyEight.new_board(4, 4))
     
     @staticmethod
-    def state_to_board(state: int, winning_value=2048):
+    def state_to_board(state: int):
         '''
         converts state number s denoted by an integer 
         in the range [0, 11^16-1] to a 4x4 board
@@ -166,8 +166,8 @@ class TwntyFrtyEight(Environment):
         if state in TwntyFrtyEight.visited_states:
             return TwntyFrtyEight.visited_states[state]
         
-        base = int(np.log2(winning_value))
-        if not 0 <= state < base**16: return None
+        base = int(np.log2(TwntyFrtyEight.WINNING_VALUE))
+        if not 0 <= state < TwntyFrtyEight.WINNING_STATE: return None
         
         # Convert state number to 16 digit base 11 representation
         # where each digit represents a tile
@@ -193,8 +193,8 @@ class TwntyFrtyEight(Environment):
         then calculating the actual value of the base 11 representation
         '''
         arr = np.copy(board)
-        base = int(np.log2(TwntyFrtyEight.winning_value))
-        if np.any(arr==TwntyFrtyEight.winning_value): return TwntyFrtyEight.winning_state
+        base = int(np.log2(TwntyFrtyEight.WINNING_VALUE))
+        if np.any(arr==TwntyFrtyEight.WINNING_VALUE): return TwntyFrtyEight.WINNING_STATE
         # Replace blank tiles with 1
         arr[arr==0] = 1
         # Convert to base 11 representation
@@ -260,10 +260,10 @@ class TwntyFrtyEight(Environment):
         Calculate reward based on current state, current action, and next state
         '''
         # reward winning
-        if next_state == TwntyFrtyEight.winning_state:
+        if next_state == TwntyFrtyEight.WINNING_STATE:
             return +1e4
         
-        if 0 <= next_state < TwntyFrtyEight.winning_state:
+        if 0 <= next_state < TwntyFrtyEight.WINNING_STATE:
             board = TwntyFrtyEight.state_to_board(next_state)
             # punish losing or choosing an action that does nothing
             if TwntyFrtyEight.get_status(board) == 'lose' or current_state == next_state:
@@ -284,10 +284,10 @@ class TwntyFrtyEight(Environment):
     
     @staticmethod
     def is_terminal_state(state: int):
-        if state == TwntyFrtyEight.winning_state:
+        if state == TwntyFrtyEight.WINNING_STATE:
             return True
         
-        if 0 <= state < TwntyFrtyEight.winning_state:
+        if 0 <= state < TwntyFrtyEight.WINNING_STATE:
             board = TwntyFrtyEight.state_to_board(state)
             if TwntyFrtyEight.get_status(board) == 'lose':
                 return True
