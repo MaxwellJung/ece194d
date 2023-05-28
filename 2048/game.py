@@ -264,13 +264,15 @@ class TwntyFrtyEight(Environment):
             return +1e4
         
         if 0 <= next_state < TwntyFrtyEight.WINNING_STATE:
-            board = TwntyFrtyEight.state_to_board(next_state)
+            current_board = TwntyFrtyEight.state_to_board(current_state)
+            next_board = TwntyFrtyEight.state_to_board(next_state)
             # punish losing or choosing an action that does nothing
-            if TwntyFrtyEight.get_status(board) == 'lose' or current_state == next_state:
+            if TwntyFrtyEight.get_status(next_board) == 'lose' or current_state == next_state:
                 return -1e4
             # punish valid moves by -1
             else:
-                return -1
+                # reward combining tiles
+                return np.count_nonzero(current_board)-np.count_nonzero(next_board)
             
     @staticmethod
     def transition(state: int, action: int):
