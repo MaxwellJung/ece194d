@@ -34,15 +34,17 @@ class Agent:
     def __init__(self, environ: Environment):
         self.environ = environ
         self.q = ActionValueFunction(environ)
-        self.w = environ.rng.uniform(low=-1e2, high=1e2, size=len(environ.get_feature_vector(0)))
+        self.w = None
         
     def policy_iteration(self, tolerance=1e-3):
+        self.w = self.environ.rng.uniform(low=-1e2, high=1e2, size=len(self.environ.get_feature_vector(0)))
         while True:
             old_w = np.copy(self.w)
-            policy = lambda s: self.greedy_policy(s, weight=self.w)
-            self.estimate_w(policy)
+            policy = lambda s: self.greedy_policy(s)
+            self.w = self.estimate_w(policy)
             if np.linalg.norm(old_w-self.w) < tolerance:
                 break
+        
     
     def estimate_w(self, policy, discount_factor=1, tolerance=1e-3):
         new_w = self.environ.rng.uniform(low=-1e2, high=1e2, size=len(self.environ.get_feature_vector(0)))
@@ -65,21 +67,21 @@ class Agent:
             # Print progress every 10 episodes
             if episode_count%1 == 0: print(f'{episode_count=} {update_count=} {new_w}')
             if np.linalg.norm(old_w-new_w) < tolerance: break
-        self.w = new_w
+        return new_w
         
     def random_policy(self, s: int) -> int:
         valid_actions = self.environ.get_valid_actions(s)
         return valid_actions[self.environ.rng.integers(len(valid_actions))]
     
-    def greedy_policy(self, s: int, weight:np.ndarray=None) -> int:
+    def greedy_policy(self, s: int) -> int:
         valid_actions = self.environ.get_valid_actions(s)
-        best_action = valid_actions[np.argmax([self.q(state=s, action=a, weight=weight) for a in valid_actions])]
+        best_action = valid_actions[np.argmax([self.q(state=s, action=a, weight=self.w) for a in valid_actions])]
         return best_action
     
-    def epsilon_greedy_policy(self, s: int, weight:np.ndarray=None, epsilon=0.1) -> int:
+    def epsilon_greedy_policy(self, s: int, epsilon=0.1) -> int:
         valid_actions = self.environ.get_valid_actions(s)
         if self.environ.rng.ranom(1) < epsilon:
             return valid_actions[self.environ.rng.integers(len(valid_actions))]
         else:
-            best_action = valid_actions[np.argmax([self.q(state=s, action=a, weight=weight) for a in valid_actions])]
+            best_action = valid_actions[np.argmax([self.q(state=s, action=a, weight=self.w) for a in valid_actions])]
             return best_action
