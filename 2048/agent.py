@@ -53,7 +53,7 @@ class Agent:
             episode_count += 1
             old_w = np.copy(new_w)
             for t in range(epi.length):
-                learning_rate = 1e-7 # alpha
+                learning_rate = 1e-5 # alpha
                 value = lambda state: self.q.value(state, weight=new_w)
                 measurement = epi.rewardAt(t+1) + discount_factor*value(epi.stateAt(t+1)) # U_t
                 estimate = value(epi.stateAt(t))
