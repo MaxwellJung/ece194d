@@ -248,12 +248,12 @@ class TwntyFrtyEight(Environment):
     def get_all_next_states(state: int, action: int):
         next_states = []
         board = TwntyFrtyEight.state_to_board(state)
-        board = TwntyFrtyEight.move(board, action)
-            
-        for position in range(np.prod(board.shape)):
-            position = np.unravel_index(position, board.shape)
-            if board[position] == 0:
-                next_board = TwntyFrtyEight.add_two(board, position)
+        compressed_board = TwntyFrtyEight.move(board, action)
+        
+        if np.any(compressed_board != board):
+            for position in np.argwhere(compressed_board == 0):
+                position = tuple(position)
+                next_board = TwntyFrtyEight.add_two(compressed_board, position)
                 next_state = TwntyFrtyEight.board_to_state(next_board)
                 next_states.append(next_state)
         else:
