@@ -1,6 +1,15 @@
+import logging
 import numpy as np
 from environment import Environment
 from episode import Episode
+
+# logging config
+logging.basicConfig(level=logging.INFO, 
+                    format="%(message)s",
+                    handlers=[
+                        logging.FileHandler("agent.log"),
+                        logging.StreamHandler()],
+                    )
 
 class ValueFunction:
     def __init__(self, environ: Environment):
@@ -47,6 +56,10 @@ class Agent:
         
     
     def estimate_w(self, policy, discount_factor=1, tolerance=1e-3):
+        def show_progress():
+            logging.info(f'{episode_count=} {update_count=} \n{new_w}')
+            # logging.info(f'{stats} win_rate={stats["win"]/episode_count:.2%} average_steps={update_count/episode_count:.2f}')
+            
         new_w = self.environ.rng.uniform(low=-1e2, high=1e2, size=len(self.environ.get_feature_vector(0)))
         update_count = 0
         episode_count = 0
@@ -65,8 +78,12 @@ class Agent:
                 update_count += 1
             
             # Print progress every 10 episodes
-            if episode_count%1 == 0: print(f'{episode_count=} {update_count=} {new_w}')
+            if episode_count%10 == 0: show_progress()
             if np.linalg.norm(old_w-new_w) < tolerance: break
+            
+        logging.info(f'------------------------Final convergence------------------------')
+        show_progress()
+        logging.info(f'-----------------------------------------------------------------')
         return new_w
         
     def random_policy(self, s: int) -> int:
