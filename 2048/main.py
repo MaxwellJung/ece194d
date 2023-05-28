@@ -1,8 +1,5 @@
-import numpy as np
 from game import TwntyFrtyEight
 from agent import Agent
-
-rng = np.random.default_rng()
 
 def main():
     g = TwntyFrtyEight()
