@@ -7,15 +7,16 @@ losing_state = 0
 winning_state = 1001
 
 def main():
-    
-    # v_true = dp()
-    # v_sa = state_aggregation(max_episodes=5000)
+    v_true = dp()
+    v_sa = state_aggregation(max_episodes=5000)
     v_pb = polynomial_basis(max_episodes=5000)
+    v_fb = fourier_basis(max_episodes=5000)
     
     fig, ax = plt.subplots()
-    # ax.plot(range(len(v_true)), v_true, color='r', label='True values')
-    # ax.plot(range(len(v_sa)), v_sa, color='b', label='State Aggregation')
-    ax.plot(range(len(v_pb)), v_pb, color='g', label='State Aggregation')
+    ax.plot(range(len(v_true)), v_true, color='r', label='True Values')
+    ax.plot(range(len(v_sa)), v_sa, color='g', label='State Aggregation')
+    ax.plot(range(len(v_pb)), v_pb, color='b', label='Polynomial Basis')
+    ax.plot(range(len(v_fb)), v_fb, color='y', label='Fourier Basis')
 
     ax.set(xlabel='State', ylabel='Value', title='Value Functions')
     ax.grid()
@@ -127,6 +128,41 @@ def polynomial_basis(max_episodes=5000):
         if s == losing_state or s == winning_state:
             continue
         x = get_polynomial_feature(s)
+        values[s] = w.dot(x)
+        
+    return values
+
+def get_fourier_feature(state):
+    c = np.arange(6)
+    x = np.cos(np.pi*c*state/1000)
+    return x
+
+def fourier_basis(max_episodes=5000):
+    w = np.zeros(6)
+    discount = 1
+    alpha = 5e-5
+    
+    for i in range(max_episodes):
+        epi = Episode()
+        g_t = 0
+        old_w = w.copy()
+        for t in reversed(range(len(epi.state_history)-1)):
+            s_t = epi.state_at(t)
+            g_t = epi.reward_at(t+1) + discount*g_t
+            x = get_fourier_feature(s_t)
+            estimate = w.dot(x)
+            grad = x
+            w = w + alpha*(g_t-estimate)*grad
+            
+        if i%1000 == 0: print(f'{i=} {w}')
+        if np.linalg.norm(old_w-w) < 0.000001:
+            break
+    
+    values = np.zeros(1002)
+    for s in range(len(values)):
+        if s == losing_state or s == winning_state:
+            continue
+        x = get_fourier_feature(s)
         values[s] = w.dot(x)
         
     return values
