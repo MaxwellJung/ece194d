@@ -24,10 +24,10 @@ class TwntyFrtyEight(Environment):
             board = TwntyFrtyEight.move(board, direction)
             # add new tile of value 2 to random position on the board
             board = TwntyFrtyEight.add_two(board)
-            if TwntyFrtyEight.get_status(board) == 'win':
+            if TwntyFrtyEight.get_board_status(board) == 'win':
                 print('Win')
                 break
-            if TwntyFrtyEight.get_status(board) == 'lose':
+            if TwntyFrtyEight.get_board_status(board) == 'lose':
                 print('Lose')
                 break
         
@@ -49,7 +49,7 @@ class TwntyFrtyEight(Environment):
         return next_board
     
     @staticmethod
-    def get_status(board: np.ndarray):
+    def get_board_status(board: np.ndarray):
         # check for win cell
         if np.any(board==2048):
             return 'win'
@@ -70,6 +70,11 @@ class TwntyFrtyEight(Environment):
             if board[j][len(board)-1] == board[j+1][len(board)-1]:
                 return 'not over'
         return 'lose'
+    
+    @staticmethod
+    def get_state_status(state: int):
+        board = TwntyFrtyEight.state_to_board(state)
+        return TwntyFrtyEight.get_board_status(board)
     
     @staticmethod
     def get_valid_actions(state: int):
@@ -267,7 +272,7 @@ class TwntyFrtyEight(Environment):
             current_board = TwntyFrtyEight.state_to_board(current_state)
             next_board = TwntyFrtyEight.state_to_board(next_state)
             # punish losing or choosing an action that does nothing
-            if TwntyFrtyEight.get_status(next_board) == 'lose' or current_state == next_state:
+            if TwntyFrtyEight.get_board_status(next_board) == 'lose' or current_state == next_state:
                 return -1e4
             # punish valid moves by -1
             else:
@@ -291,7 +296,7 @@ class TwntyFrtyEight(Environment):
         
         if 0 <= state < TwntyFrtyEight.WINNING_STATE:
             board = TwntyFrtyEight.state_to_board(state)
-            if TwntyFrtyEight.get_status(board) == 'lose':
+            if TwntyFrtyEight.get_board_status(board) == 'lose':
                 return True
             else:
                 return False

@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 import numpy as np
 from environment import Environment
 from episode import Episode
@@ -58,8 +59,10 @@ class Agent:
     def estimate_w(self, policy, discount_factor=1, tolerance=1e-3):
         def show_progress():
             logging.info(f'{episode_count=} {update_count=} \n{new_w}')
-            # logging.info(f'{stats} win_rate={stats["win"]/episode_count:.2%} average_steps={update_count/episode_count:.2f}')
+            logging.info(f'{dict(stats)} win_rate={stats["win"]/episode_count:.2%} average_steps={update_count/episode_count:.2f}')
             
+        stats = defaultdict(int)
+        
         new_w = self.environ.rng.uniform(low=-1e2, high=1e2, size=len(self.environ.get_feature_vector(0)))
         update_count = 0
         episode_count = 0
@@ -68,7 +71,7 @@ class Agent:
             episode_count += 1
             old_w = np.copy(new_w)
             for t in range(epi.length):
-                learning_rate = 1e-5 # alpha
+                learning_rate = 1e-6 # alpha
                 value = lambda state: self.q.value(state, weight=new_w)
                 measurement = epi.rewardAt(t+1) + discount_factor*value(epi.stateAt(t+1)) # U_t
                 estimate = value(epi.stateAt(t))
@@ -77,8 +80,10 @@ class Agent:
                 new_w = new_w + update # w_t+1 = w_t + a[U_t-v(s_t, w_t)]*grad(v(s_t, w_t))
                 update_count += 1
             
-            # Print progress every 10 episodes
-            if episode_count%10 == 0: show_progress()
+            stats[self.environ.get_state_status(epi.state_history[-1])] += 1
+            
+            # Print progress every 100 episodes
+            if episode_count%100 == 0: show_progress()
             if np.linalg.norm(old_w-new_w) < tolerance: break
             
         logging.info(f'------------------------Final convergence------------------------')

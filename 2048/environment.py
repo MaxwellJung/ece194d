@@ -31,3 +31,7 @@ class Environment(ABC):
     @staticmethod
     @abstractmethod
     def is_terminal_state(state: int): pass
+    
+    @staticmethod
+    @abstractmethod
+    def get_state_status(state: int): pass
