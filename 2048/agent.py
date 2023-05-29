@@ -56,7 +56,7 @@ class Agent:
                 break
         
     
-    def estimate_w(self, policy, tolerance=1e-3, discount_factor=1, trace_decay_rate=1):
+    def estimate_w(self, policy, tolerance=1e-3, discount_factor=1, trace_decay_rate=0.8):
         '''
         Semi-gradient TD(lambda) for estimating v_hat close to v_pi
         algorithm from page 293 of Sutton Barto 2nd edition
