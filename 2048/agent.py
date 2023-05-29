@@ -77,13 +77,13 @@ class Agent:
             old_w = np.copy(w)
             for t in range(epi.length):
                 learning_rate = 1e-6 # alpha
-                value = lambda state: self.q.value(state, weight=w)
-                measurement = epi.rewardAt(t+1) + discount_factor*value(epi.stateAt(t+1)) # U_t
-                estimate = value(epi.stateAt(t))
+                state_value = lambda state: self.q.value(state, weight=w)
+                measurement = epi.rewardAt(t+1) + discount_factor*state_value(epi.stateAt(t+1)) # U_t
+                estimate = state_value(epi.stateAt(t))
                 grad = self.environ.get_feature_vector(epi.stateAt(t)) # gradient of (W^T)X is X
                 z = discount_factor*trace_decay_rate*z + grad
                 update = learning_rate*(measurement - estimate)*z
-                w = w + update # w_t+1 = w_t + a[U_t-v(s_t, w_t)]*grad(v(s_t, w_t))
+                w = w + update # gradient descent
                 update_count += 1
             
             # Record episode stats
