@@ -93,12 +93,14 @@ class TwntyFrtyEight(Environment):
     def compress(board: np.ndarray):
         '''
         compress the board towards the left
+        vectorized algorithm from
+        https://stackoverflow.com/a/43011036
         '''
-        for row_index in range(board.shape[0]):
-            row = board[row_index]
-            compressed_row = row[row!=0]
-            new_row = np.pad(compressed_row, (0, board.shape[1]-len(compressed_row)))
-            board[row_index] = new_row
+        valid_mask = board!=0
+        flipped_mask = valid_mask.sum(1,keepdims=1) > np.arange(board.shape[1]-1,-1,-1)
+        flipped_mask = flipped_mask[:,::-1]
+        board[flipped_mask] = board[valid_mask]
+        board[~flipped_mask] = 0
             
         return board
     
@@ -198,12 +200,12 @@ class TwntyFrtyEight(Environment):
         then calculating the actual value of the base 11 representation
         '''
         arr = np.copy(board)
-        base = int(np.log2(TwntyFrtyEight.WINNING_VALUE))
-        if np.any(arr==TwntyFrtyEight.WINNING_VALUE): return TwntyFrtyEight.WINNING_STATE
+        if np.any(board==TwntyFrtyEight.WINNING_VALUE): return TwntyFrtyEight.WINNING_STATE
         # Replace blank tiles with 1
         arr[arr==0] = 1
         # Convert to base 11 representation
         digits = np.log2(arr.flatten()).astype('int64')
+        base = int(np.log2(TwntyFrtyEight.WINNING_VALUE))
         values_per_digit = np.power(base, np.arange(len(digits)-1, -1, -1, dtype='int64'))
         state = digits.dot(values_per_digit)
         
@@ -246,12 +248,12 @@ class TwntyFrtyEight(Environment):
     def get_all_next_states(state: int, action: int):
         next_states = []
         board = TwntyFrtyEight.state_to_board(state)
-        board = TwntyFrtyEight.move(board, action)
-            
-        for position in range(np.prod(board.shape)):
-            position = np.unravel_index(position, board.shape)
-            if board[position] == 0:
-                next_board = TwntyFrtyEight.add_two(board, position)
+        compressed_board = TwntyFrtyEight.move(board, action)
+        
+        if np.any(compressed_board != board):
+            for position in np.argwhere(compressed_board == 0):
+                position = tuple(position)
+                next_board = TwntyFrtyEight.add_two(compressed_board, position)
                 next_state = TwntyFrtyEight.board_to_state(next_board)
                 next_states.append(next_state)
         else:
