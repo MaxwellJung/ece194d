@@ -55,7 +55,7 @@ class Agent:
                 break
         
     
-    def estimate_w(self, policy, tolerance=1e-3, discount_factor=1, trace_decay_rate=0.8):
+    def estimate_w(self, policy, tolerance=1e-3, discount_factor=1, trace_decay_rate=0.8, max_episodes=1000):
         '''
         Semi-gradient TD(lambda) for estimating v_hat close to v_pi
         algorithm from page 293 of Sutton Barto 2nd edition
@@ -68,14 +68,12 @@ class Agent:
         
         w = self.w
         update_count = 0
-        episode_count = 0
-        while True:
+        for episode_count in range(1, max_episodes+1):
             epi = Episode(self.environ, policy)
-            episode_count += 1
             z = 0
             old_w = np.copy(w)
             for t in range(epi.length):
-                learning_rate = 5e-7 # alpha
+                learning_rate = 1e-6 # alpha
                 state_value = lambda state: self.q.value(state, weight=w)
                 measurement = epi.rewardAt(t+1) + discount_factor*state_value(epi.stateAt(t+1)) # U_t
                 estimate = state_value(epi.stateAt(t))
