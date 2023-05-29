@@ -56,40 +56,47 @@ class Agent:
                 break
         
     
-    def estimate_w(self, policy, discount_factor=1, tolerance=1e-3):
+    def estimate_w(self, policy, tolerance=1e-3, discount_factor=1, trace_decay_rate=1):
+        '''
+        Semi-gradient TD(lambda) for estimating v_hat close to v_pi
+        algorithm from page 293 of Sutton Barto 2nd edition
+        '''
         def show_progress():
-            logging.info(f'{episode_count=} {update_count=} \n{new_w}')
+            logging.info(f'{episode_count=} {update_count=} \n{w}')
             logging.info(f'{dict(stats)} win_rate={stats["win"]/episode_count:.2%} average_steps={update_count/episode_count:.2f}')
             
         stats = defaultdict(int)
         
-        new_w = self.environ.rng.uniform(low=-1e2, high=1e2, size=len(self.environ.get_feature_vector(0)))
+        w = self.w
         update_count = 0
         episode_count = 0
         while True:
             epi = Episode(self.environ, policy)
             episode_count += 1
-            old_w = np.copy(new_w)
+            z = 0
+            old_w = np.copy(w)
             for t in range(epi.length):
                 learning_rate = 1e-6 # alpha
-                value = lambda state: self.q.value(state, weight=new_w)
+                value = lambda state: self.q.value(state, weight=w)
                 measurement = epi.rewardAt(t+1) + discount_factor*value(epi.stateAt(t+1)) # U_t
                 estimate = value(epi.stateAt(t))
                 grad = self.environ.get_feature_vector(epi.stateAt(t)) # gradient of (W^T)X is X
-                update = learning_rate*(measurement - estimate)*grad
-                new_w = new_w + update # w_t+1 = w_t + a[U_t-v(s_t, w_t)]*grad(v(s_t, w_t))
+                z = discount_factor*trace_decay_rate*z + grad
+                update = learning_rate*(measurement - estimate)*z
+                w = w + update # w_t+1 = w_t + a[U_t-v(s_t, w_t)]*grad(v(s_t, w_t))
                 update_count += 1
             
+            # Record episode stats
             stats[self.environ.get_state_status(epi.state_history[-1])] += 1
             
             # Print progress every 100 episodes
             if episode_count%100 == 0: show_progress()
-            if np.linalg.norm(old_w-new_w) < tolerance: break
+            if np.linalg.norm(old_w-w) < tolerance: break
             
         logging.info(f'------------------------Final convergence------------------------')
         show_progress()
         logging.info(f'-----------------------------------------------------------------')
-        return new_w
+        return w
         
     def random_policy(self, s: int) -> int:
         valid_actions = self.environ.get_valid_actions(s)
