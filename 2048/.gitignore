@@ -4,3 +4,4 @@
 # python
 *.pyc
 __pycache__
+*.prof
