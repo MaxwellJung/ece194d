@@ -49,7 +49,7 @@ class Agent:
     def policy_iteration(self, tolerance=1e-3):
         while True:
             old_w = np.copy(self.w)
-            policy = lambda s: self.greedy_policy(s)
+            policy = self.greedy_policy
             self.w = self.estimate_w(policy)
             if np.linalg.norm(old_w-self.w) < tolerance:
                 break
@@ -75,7 +75,7 @@ class Agent:
             z = 0
             old_w = np.copy(w)
             for t in range(epi.length):
-                learning_rate = 1e-6 # alpha
+                learning_rate = 5e-7 # alpha
                 state_value = lambda state: self.q.value(state, weight=w)
                 measurement = epi.rewardAt(t+1) + discount_factor*state_value(epi.stateAt(t+1)) # U_t
                 estimate = state_value(epi.stateAt(t))
