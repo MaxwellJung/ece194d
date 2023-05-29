@@ -49,7 +49,7 @@ class Agent:
     def policy_iteration(self, tolerance=1e-3):
         while True:
             old_w = np.copy(self.w)
-            policy = self.greedy_policy
+            policy = self.epsilon_greedy_policy
             self.w = self.estimate_w(policy)
             if np.linalg.norm(old_w-self.w) < tolerance:
                 break
@@ -73,7 +73,7 @@ class Agent:
             z = 0
             old_w = np.copy(w)
             for t in range(epi.length):
-                learning_rate = 1e-6 # alpha
+                learning_rate = 1e-7 # alpha
                 state_value = lambda state: self.q.value(state, weight=w)
                 measurement = epi.rewardAt(t+1) + discount_factor*state_value(epi.stateAt(t+1)) # U_t
                 estimate = state_value(epi.stateAt(t))
@@ -106,7 +106,7 @@ class Agent:
     
     def epsilon_greedy_policy(self, s: int, epsilon=0.1) -> int:
         valid_actions = self.environ.get_valid_actions(s)
-        if self.environ.rng.ranom(1) < epsilon:
+        if self.environ.rng.random(1) < epsilon:
             return valid_actions[self.environ.rng.integers(len(valid_actions))]
         else:
             best_action = valid_actions[np.argmax([self.q(state=s, action=a, weight=self.w) for a in valid_actions])]
