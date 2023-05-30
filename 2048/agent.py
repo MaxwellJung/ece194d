@@ -78,7 +78,7 @@ class Agent:
             stats[self.environ.get_state_status(S_prime)] += 1
             
             # Print progress every 100 episodes
-            if episode_count%1 == 0: show_progress()
+            if episode_count%100 == 0: show_progress()
             if np.linalg.norm(last_w-self.w) < tolerance: break
             
         logging.info(f'------------------------Final convergence------------------------')
