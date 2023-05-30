@@ -222,11 +222,38 @@ class TwntyFrtyEight(Environment):
         Converts state number to feature vector
         '''
         board = TwntyFrtyEight.state_to_board(state)
-        compressed_board, points = TwntyFrtyEight.move(board, action)        
-        blanks = np.count_nonzero(compressed_board == 0) - 1
+        compressed_board, points = TwntyFrtyEight.move(board, action)
+        def mean(): return compressed_board.mean()
+        def std(): return compressed_board.std()
+        def fullness(): return np.count_nonzero(compressed_board)
+
+        def distance_to_corner():
+            '''
+            Calculates manhattan distance of the largest tile to the nearest corner
+            '''
+            row_count, col_count = compressed_board.shape
+            corners = np.array([(0,0), (0, col_count-1), (row_count-1, 0), (row_count-1, col_count-1)])
+            max_pos = np.unravel_index(np.argmax(compressed_board), compressed_board.shape)
+            return np.min(np.linalg.norm(corners-max_pos, ord=1, axis=1))
+
+        def center_sum(): return np.sum(compressed_board[1:-1, 1:-1])
+        def perimeter_sum(): return np.sum(compressed_board)-center_sum()
         
-        return np.array([points,
-                         blanks,])
+        def neighboor_difference():
+            row_dif = compressed_board[0:-1]-compressed_board[1:]
+            col_dif = compressed_board[:, 0:-1]-compressed_board[:, 1:]
+            return np.sum(row_dif) + np.sum(col_dif)
+
+        X = np.array([1,
+                      mean(),
+                      std(),
+                      points,
+                      fullness(),
+                      distance_to_corner(),
+                      center_sum(),
+                      perimeter_sum(),
+                      neighboor_difference()])
+        return X
         
     @staticmethod
     def get_all_next_states(state: int, action: int):
