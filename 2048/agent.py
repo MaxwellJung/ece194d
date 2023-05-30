@@ -49,7 +49,8 @@ class Agent:
         def show_progress():
             logging.info(TwntyFrtyEight.state_to_board(S_prime))
             logging.info(f'{episode_count=} {update_count=} \n{self.w}')
-            logging.info(f'{dict(stats)} win_rate={stats["win"]/episode_count:.2%} average_steps={update_count/episode_count:.2f}')
+            sorted_stats = {k: v for k, v in sorted(stats.items(), key=lambda item: item[1], reverse=True)}
+            logging.info(f'{sorted_stats} win_rate={stats[2048]/episode_count:.2%} average_steps={update_count/episode_count:.2f}')
             
         stats = defaultdict(int)
         
