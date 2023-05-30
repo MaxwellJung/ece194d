@@ -239,14 +239,14 @@ class TwntyFrtyEight(Environment):
         def center_sum(): return np.sum(compressed_board[1:-1, 1:-1])
         def perimeter_sum(): return np.sum(compressed_board)-center_sum()
         
-        def neighboor_difference():
-            row_dif = compressed_board[0:-1]-compressed_board[1:]
-            col_dif = compressed_board[:, 0:-1]-compressed_board[:, 1:]
-            return np.sum(row_dif) + np.sum(col_dif)
+        def dif():
+            row_dif = np.sum(compressed_board[0:-1]-compressed_board[1:])
+            col_dif = np.sum(compressed_board[:, 0:-1]-compressed_board[:, 1:])
+            return np.min([row_dif, col_dif])
 
         X = np.array([emptiness(),
                       points,
-                      neighboor_difference()])
+                      dif(),])
         return X
         
     @staticmethod
