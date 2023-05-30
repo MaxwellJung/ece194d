@@ -1,6 +1,7 @@
 import logging
 from collections import defaultdict
 import numpy as np
+from scipy.special import softmax
 from environment import Environment
 from episode import Episode
 
@@ -49,7 +50,7 @@ class Agent:
     def policy_iteration(self, tolerance=1e-3):
         while True:
             old_w = np.copy(self.w)
-            policy = self.epsilon_greedy_policy
+            policy = self.softmax_policy
             self.w = self.estimate_w(policy)
             if np.linalg.norm(old_w-self.w) < tolerance:
                 break
@@ -111,3 +112,8 @@ class Agent:
         else:
             best_action = valid_actions[np.argmax([self.q(state=s, action=a, weight=self.w) for a in valid_actions])]
             return best_action
+    
+    def softmax_policy(self, s: int) -> int:
+        valid_actions = self.environ.get_valid_actions(s)
+        action_values = [self.q(state=s, action=a, weight=self.w) for a in valid_actions]
+        return valid_actions[self.environ.rng.choice(len(action_values), p=softmax(action_values))]
