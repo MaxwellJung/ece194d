@@ -243,10 +243,16 @@ class TwntyFrtyEight(Environment):
             row_dif = np.sum(compressed_board[0:-1]-compressed_board[1:])
             col_dif = np.sum(compressed_board[:, 0:-1]-compressed_board[:, 1:])
             return np.min([row_dif, col_dif])
+        
+        def max_tile():
+            tile_value = np.max(compressed_board)
+            tile_value = 1 if tile_value == 0 else tile_value
+            return np.log2(tile_value)
 
         X = np.array([emptiness(),
                       points,
-                      dif(),])
+                      dif(),
+                      max_tile()])
         return X
         
     @staticmethod
