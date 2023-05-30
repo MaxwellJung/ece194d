@@ -47,7 +47,7 @@ class Agent:
         algorithm from page 244 of Sutton Barto 2nd edition
         '''
         def show_progress():
-            print(TwntyFrtyEight.state_to_board(S_prime))
+            logging.info(TwntyFrtyEight.state_to_board(S_prime))
             logging.info(f'{episode_count=} {update_count=} \n{self.w}')
             logging.info(f'{dict(stats)} win_rate={stats["win"]/episode_count:.2%} average_steps={update_count/episode_count:.2f}')
             
