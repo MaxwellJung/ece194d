@@ -22,19 +22,19 @@ class Episode:
         
         self.length = len(self.action_history)
             
-    def stateAt(self, t):
+    def state_at(self, t):
         if 0 <= t < len(self.state_history):
             return self.state_history[t]
         else:
             return None
     
-    def actionAt(self, t):
+    def action_at(self, t):
         if 0 <= t < len(self.action_history):
             return self.action_history[t]
         else:
             return None
     
-    def rewardAt(self, t):
+    def reward_at(self, t):
         if 1 <= t < len(self.reward_history):
             return self.reward_history[t]
         else:
