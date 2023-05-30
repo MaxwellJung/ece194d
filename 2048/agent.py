@@ -93,7 +93,8 @@ class Agent:
     
     def greedy_policy(self, s: int) -> int:
         valid_actions = self.environ.get_valid_actions(s)
-        best_action = valid_actions[np.argmax([self.q(state=s, action=a, weight=self.w) for a in valid_actions])]
+        values = np.array([self.q(state=s, action=a, weight=self.w) for a in valid_actions])
+        best_action = valid_actions[self.environ.rng.choice(np.flatnonzero(values == values.max()))]
         return best_action
     
     def epsilon_greedy_policy(self, s: int, epsilon=0.1) -> int:
@@ -101,7 +102,8 @@ class Agent:
         if self.environ.rng.random(1) < epsilon:
             return valid_actions[self.environ.rng.integers(len(valid_actions))]
         else:
-            best_action = valid_actions[np.argmax([self.q(state=s, action=a, weight=self.w) for a in valid_actions])]
+            values = np.array([self.q(state=s, action=a, weight=self.w) for a in valid_actions])
+            best_action = valid_actions[self.environ.rng.choice(np.flatnonzero(values == values.max()))]
             return best_action
     
     def softmax_policy(self, s: int) -> int:
