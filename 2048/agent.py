@@ -61,7 +61,7 @@ class Agent:
             S = self.environ.get_initial_state()
             A = policy(S)
             while True:
-                alpha = 1e-8
+                alpha = 1e-6
                 S_prime = self.environ.transition(S, A)
                 R = self.environ.reward(S, A, S_prime)
                 grad = self.environ.get_feature_vector(S, A)

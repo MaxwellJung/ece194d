@@ -225,7 +225,7 @@ class TwntyFrtyEight(Environment):
         compressed_board, points = TwntyFrtyEight.move(board, action)
         def mean(): return compressed_board.mean()
         def std(): return compressed_board.std()
-        def fullness(): return np.count_nonzero(compressed_board)
+        def emptiness(): return np.count_nonzero(compressed_board==0)
 
         def distance_to_corner():
             '''
@@ -244,14 +244,8 @@ class TwntyFrtyEight(Environment):
             col_dif = compressed_board[:, 0:-1]-compressed_board[:, 1:]
             return np.sum(row_dif) + np.sum(col_dif)
 
-        X = np.array([1,
-                      mean(),
-                      std(),
+        X = np.array([emptiness(),
                       points,
-                      fullness(),
-                      distance_to_corner(),
-                      center_sum(),
-                      perimeter_sum(),
                       neighboor_difference()])
         return X
         
