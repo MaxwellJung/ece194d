@@ -53,6 +53,7 @@ class Agent:
         while True:
             episode_count += 1
             last_w = np.copy(self.w)
+            learning_rate = alpha/np.log(np.log(update_count+2)+1)
             S = self.environ.get_initial_state()
             A = policy(S)
             while True:
@@ -60,11 +61,11 @@ class Agent:
                 R = self.environ.reward(S, A, S_prime)
                 grad = self.environ.get_feature_vector(S, A)
                 if self.environ.is_terminal_state(S_prime):
-                    self.w = self.w + alpha*(R - self.q(S, A, self.w))*grad
+                    self.w = self.w + learning_rate*(R - self.q(S, A, self.w))*grad
                     update_count += 1
                     break
                 A_prime = policy(S_prime)
-                self.w = self.w + alpha*(R + discount_factor*self.q(S_prime, A_prime, self.w) - self.q(S, A, self.w))*grad
+                self.w = self.w + learning_rate*(R + discount_factor*self.q(S_prime, A_prime, self.w) - self.q(S, A, self.w))*grad
                 update_count += 1
                 S = S_prime
                 A = A_prime
