@@ -33,7 +33,7 @@ class Agent:
         # Initialize weight to 0 vector
         self.w = np.zeros(len(self.environ.get_feature_vector(0, 0)))
     
-    def find_optimal_weight(self, alpha, discount_factor=1, tolerance=1e-3):
+    def find_optimal_weight(self, alpha, discount_factor=1, tolerance=1e-3, alpha_decay=True):
         '''
         Episodic Semi-gradient Sarsa for Estimating q_hat = q_star
         algorithm from page 244 of Sutton Barto 2nd edition
@@ -53,7 +53,7 @@ class Agent:
         while True:
             episode_count += 1
             last_w = np.copy(self.w)
-            learning_rate = alpha/np.log(np.log(update_count+2)+1)
+            learning_rate = alpha/np.log(np.log(update_count+2)+1) if alpha_decay else alpha
             S = self.environ.get_initial_state()
             A = policy(S)
             while True:
