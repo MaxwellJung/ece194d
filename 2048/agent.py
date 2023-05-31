@@ -41,7 +41,7 @@ class Agent:
             if np.linalg.norm(last_w-self.w) < tolerance:
                 break
     
-    def find_weight(self, policy, tolerance=1e-3, discount_factor=1):
+    def find_weight(self, policy, tolerance=1e-4, discount_factor=1):
         '''
         Episodic Semi-gradient Sarsa for Estimating q_hat = q_star
         algorithm from page 244 of Sutton Barto 2nd edition
@@ -62,7 +62,7 @@ class Agent:
             S = self.environ.get_initial_state()
             A = policy(S)
             while True:
-                alpha = 1e-6
+                alpha = 1e-8
                 S_prime = self.environ.transition(S, A)
                 R = self.environ.reward(S, A, S_prime)
                 grad = self.environ.get_feature_vector(S, A)

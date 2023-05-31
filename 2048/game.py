@@ -239,7 +239,7 @@ class TwntyFrtyEight(Environment):
         def center_sum(): return np.sum(compressed_board[1:-1, 1:-1])
         def perimeter_sum(): return np.sum(compressed_board)-center_sum()
         
-        def dif():
+        def tile_delta():
             row_dif = np.sum(compressed_board[0:-1]-compressed_board[1:])
             col_dif = np.sum(compressed_board[:, 0:-1]-compressed_board[:, 1:])
             return np.min([row_dif, col_dif])
@@ -251,7 +251,8 @@ class TwntyFrtyEight(Environment):
 
         X = np.array([emptiness(),
                       points,
-                      dif(),
+                      tile_delta(),
+                      std(),
                       max_tile()])
         return X
         
