@@ -252,7 +252,11 @@ class TwntyFrtyEight(Environment):
         X = np.array([emptiness(),
                       points,
                       tile_delta(),
+                      mean(),
                       std(),
+                      distance_to_corner(),
+                      center_sum(),
+                      perimeter_sum(),
                       max_tile()])
         return X
         
@@ -293,7 +297,7 @@ class TwntyFrtyEight(Environment):
                 # reward combining tiles
                 compressed_board, points = TwntyFrtyEight.move(current_board, current_action)
                 bonus = np.max(compressed_board) if np.max(compressed_board) > np.max(current_board) else 0
-                return points + bonus
+                return bonus
             
     @staticmethod
     def transition(state: int, action: int):
