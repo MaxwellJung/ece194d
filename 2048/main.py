@@ -9,7 +9,7 @@ def main():
     agent = Agent(environ=g)
     agent.w = np.load('w_star.npy')
     try:
-        agent.find_optimal_weight(alpha=1e-7, tolerance=1e-6, alpha_decay=True)
+        agent.find_optimal_weight(alpha=1e-7, tolerance=1e-9, alpha_decay=True)
     except KeyboardInterrupt:
         pass
     
