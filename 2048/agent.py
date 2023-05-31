@@ -53,7 +53,7 @@ class Agent:
         while True:
             episode_count += 1
             last_w = np.copy(self.w)
-            learning_rate = alpha/np.log(np.log(update_count+2)+1) if alpha_decay else alpha
+            learning_rate = alpha/(update_count+1) if alpha_decay else alpha
             S = self.environ.get_initial_state()
             A = policy(S)
             while True:
