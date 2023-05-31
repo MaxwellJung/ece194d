@@ -32,16 +32,8 @@ class Agent:
         self.q = ActionValue(environ)
         # Initialize weight to 0 vector
         self.w = np.zeros(len(self.environ.get_feature_vector(0, 0)))
-        
-    def policy_iteration(self, tolerance=1e-3):
-        while True:
-            last_w = np.copy(self.w)
-            policy = self.softmax_policy
-            self.find_weight(policy)
-            if np.linalg.norm(last_w-self.w) < tolerance:
-                break
     
-    def find_weight(self, policy, tolerance=1e-4, discount_factor=1):
+    def find_optimal_weight(self, alpha, discount_factor=1, tolerance=1e-3):
         '''
         Episodic Semi-gradient Sarsa for Estimating q_hat = q_star
         algorithm from page 244 of Sutton Barto 2nd edition
@@ -51,8 +43,10 @@ class Agent:
             logging.info(f'{episode_count=} {update_count=} \n{self.w}')
             sorted_stats = {k: v for k, v in sorted(stats.items(), key=lambda item: item[1], reverse=True)}
             logging.info(f'{sorted_stats} win_rate={stats[2048]/episode_count:.2%} average_steps={update_count/episode_count:.2f}')
-            
         stats = defaultdict(int)
+        
+        # initialize
+        policy = self.softmax_policy
         
         update_count = 0
         episode_count = 0
@@ -62,7 +56,6 @@ class Agent:
             S = self.environ.get_initial_state()
             A = policy(S)
             while True:
-                alpha = 1e-8
                 S_prime = self.environ.transition(S, A)
                 R = self.environ.reward(S, A, S_prime)
                 grad = self.environ.get_feature_vector(S, A)
