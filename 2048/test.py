@@ -58,7 +58,9 @@ class GameGrid(Frame):
         self.board = game.new_board(c.GRID_LEN, c.GRID_LEN)
         self.board_history = []
         self.update_grid_cells()
-
+        
+        self.update_idletasks()
+        self.update()
         # self.mainloop()
 
     def init_grid(self):
