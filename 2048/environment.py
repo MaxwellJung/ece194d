@@ -26,7 +26,7 @@ class Environment(ABC):
     
     @staticmethod
     @abstractmethod
-    def get_feature_vector(state: int): pass
+    def get_feature_vector(state: int, action: int): pass
     
     @staticmethod
     @abstractmethod

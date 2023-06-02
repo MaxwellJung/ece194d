@@ -11,17 +11,20 @@ class TwntyFrtyEight(Environment):
     @staticmethod
     def play():
         board = TwntyFrtyEight.new_board(row_count=4, col_count=4) # create new game
+        score = 0
         while True:
             print(board)
+            print(f'{score=}')
             # ask user for input
             try: direction = int(input(f'Direction (0 left, 1 up, 2 right, 3 down): '))
             except ValueError: continue
-            if direction not in TwntyFrtyEight.get_valid_actions(board):
+            if direction not in TwntyFrtyEight.get_valid_actions(TwntyFrtyEight.board_to_state(board)):
                 print(f'Invalid direction. Please input a valid direction.')
                 continue
             # transition the board to next state
             # done flag is used to check if the direction is a valid move
-            board = TwntyFrtyEight.move(board, direction)
+            board, points = TwntyFrtyEight.move(board, direction)
+            score += points
             # add new tile of value 2 to random position on the board
             board = TwntyFrtyEight.add_two(board)
             if TwntyFrtyEight.get_board_status(board) == 'win':
@@ -74,7 +77,7 @@ class TwntyFrtyEight(Environment):
     @staticmethod
     def get_state_status(state: int):
         board = TwntyFrtyEight.state_to_board(state)
-        return TwntyFrtyEight.get_board_status(board)
+        return np.max(board)
     
     @staticmethod
     def get_valid_actions(state: int):
@@ -83,7 +86,7 @@ class TwntyFrtyEight(Environment):
         valid_actions = []
         
         for action in all_actions:
-            next_board = TwntyFrtyEight.move(board, action)
+            next_board, points = TwntyFrtyEight.move(board, action)
             if np.any(board != next_board):
                 valid_actions.append(action)
         
@@ -130,7 +133,7 @@ class TwntyFrtyEight(Environment):
         # rotate back to original
         next_board = np.rot90(next_board, -action)
         
-        return next_board
+        return next_board, points
     
     @staticmethod
     def left(board: np.ndarray):
@@ -214,41 +217,54 @@ class TwntyFrtyEight(Environment):
         return state
     
     @staticmethod
-    def get_feature_vector(state: int):
+    def get_feature_vector(state: int, action: int):
         '''
         Converts state number to feature vector
         '''
         board = TwntyFrtyEight.state_to_board(state)
-        
-        def mean(): return board.mean()
-        def std(): return board.std()
-        def fullness(): return np.count_nonzero(board)
+        compressed_board, points = TwntyFrtyEight.move(board, action)
+        def mean(): return compressed_board.mean()
+        def std(): return compressed_board.std()
+        def emptiness(): return np.count_nonzero(compressed_board==0)
 
         def distance_to_corner():
             '''
             Calculates manhattan distance of the largest tile to the nearest corner
             '''
-            row_count, col_count = board.shape
+            row_count, col_count = compressed_board.shape
             corners = np.array([(0,0), (0, col_count-1), (row_count-1, 0), (row_count-1, col_count-1)])
-            max_pos = np.unravel_index(np.argmax(board), board.shape)
+            max_pos = np.unravel_index(np.argmax(compressed_board), compressed_board.shape)
             return np.min(np.linalg.norm(corners-max_pos, ord=1, axis=1))
 
-        def center_sum(): return np.sum(board[1:-1, 1:-1])
-        def perimeter_sum(): return np.sum(board)-center_sum()
+        def center_sum(): return np.sum(compressed_board[1:-1, 1:-1])
+        def perimeter_sum(): return np.sum(compressed_board)-center_sum()
+        
+        def tile_delta():
+            row_dif = np.sum(compressed_board[0:-1]-compressed_board[1:])
+            col_dif = np.sum(compressed_board[:, 0:-1]-compressed_board[:, 1:])
+            return np.min([row_dif, col_dif])
+        
+        def max_tile():
+            tile_value = np.max(compressed_board)
+            tile_value = 1 if tile_value == 0 else tile_value
+            return np.log2(tile_value)
 
-        return np.array([1,
-                        mean(),
-                        std(),
-                        fullness(),
-                        distance_to_corner(),
-                        center_sum(),
-                        perimeter_sum()])
+        X = np.array([emptiness(),
+                      points,
+                      tile_delta(),
+                      mean(),
+                      std(),
+                      distance_to_corner(),
+                      center_sum(),
+                      perimeter_sum(),
+                      max_tile()])
+        return X
         
     @staticmethod
     def get_all_next_states(state: int, action: int):
         next_states = []
         board = TwntyFrtyEight.state_to_board(state)
-        compressed_board = TwntyFrtyEight.move(board, action)
+        compressed_board, points = TwntyFrtyEight.move(board, action)
         
         if np.any(compressed_board != board):
             for position in np.argwhere(compressed_board == 0):
@@ -268,23 +284,25 @@ class TwntyFrtyEight(Environment):
         '''
         # reward winning
         if next_state == TwntyFrtyEight.WINNING_STATE:
-            return +1e4
+            return 0
         
         if 0 <= next_state < TwntyFrtyEight.WINNING_STATE:
             current_board = TwntyFrtyEight.state_to_board(current_state)
             next_board = TwntyFrtyEight.state_to_board(next_state)
             # punish losing or choosing an action that does nothing
             if TwntyFrtyEight.get_board_status(next_board) == 'lose' or current_state == next_state:
-                return -1e4
+                return 0
             # punish valid moves by -1
             else:
                 # reward combining tiles
-                return np.count_nonzero(current_board)-np.count_nonzero(next_board)
+                compressed_board, points = TwntyFrtyEight.move(current_board, current_action)
+                bonus = np.max(compressed_board) if np.max(compressed_board) > np.max(current_board) else 0
+                return points + bonus
             
     @staticmethod
     def transition(state: int, action: int):
         board = TwntyFrtyEight.state_to_board(state)
-        next_board = TwntyFrtyEight.move(board, action)
+        next_board, points = TwntyFrtyEight.move(board, action)
         
         if np.any(next_board != board):
             board = TwntyFrtyEight.add_two(next_board)
