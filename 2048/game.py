@@ -261,12 +261,18 @@ class TwntyFrtyEight(Environment):
         
         def compute_fourier_basis(features: np.ndarray, n):
             '''
-            Computer fourier basis of length (n+1)^k where k is the number of features
+            Compute fourier basis of length (n+1)^k where k is the number of features
             and n is the resolution of fourier series
             '''
-            # [TODO] use features and n to calculate fourier basis
             k = len(features)
             fourier_basis = np.zeros((n+1)**k)
+            a = np.arange(n+1)
+            print("start")
+            c = np.array(np.meshgrid(a,a,a)).T.reshape((n+1)**k,3) #3 features
+            print(c)
+            print("\n")
+            normalizedFeatures = (features-np.min(features))/(np.max(features)-np.min(features))
+            fourier_basis = np.cos(np.pi*c*normalizedFeatures)
             return fourier_basis
         
         X = compute_fourier_basis(S, n=5)
