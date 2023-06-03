@@ -1,16 +1,16 @@
 import numpy as np
 
 def mean(board: np.ndarray):
-    board = np.copy(board)
-    board[board==0] = 1
-    board = np.log2(board)
-    return board.mean()
+    matrix = np.copy(board)
+    matrix[matrix==0] = 1
+    matrix = np.log2(matrix)
+    return matrix.mean()
 
 def std(board: np.ndarray):
-    board = np.copy(board)
-    board[board==0] = 1
-    board = np.log2(board)
-    return board.std()
+    matrix = np.copy(board)
+    matrix[matrix==0] = 1
+    matrix = np.log2(matrix)
+    return matrix.std()
 
 def empty_tiles(board: np.ndarray): return np.count_nonzero(board==0)
 
@@ -19,10 +19,10 @@ def roughness(board: np.ndarray):
     Calculates how rough/bumpy the board is
     smoothness formula from https://stats.stackexchange.com/q/24607
     '''
-    board = np.copy(board)
-    board[board==0] = 1
-    board = np.log2(board)
-    deltas = np.concatenate([np.diff(board, axis=0).flatten(), np.diff(board, axis=1).flatten()])
+    matrix = np.copy(board)
+    matrix[matrix==0] = 1
+    matrix = np.log2(matrix)
+    deltas = np.concatenate([np.diff(matrix, axis=0).flatten(), np.diff(matrix, axis=1).flatten()])
     roughness = np.std(deltas)
     return roughness
 
@@ -75,24 +75,29 @@ def distance_to_corner(board: np.ndarray):
     max_pos = np.unravel_index(np.argmax(board), board.shape)
     return np.min(np.linalg.norm(corners-max_pos, ord=1, axis=1))
 
-def duplicates(board: np.ndarray):
-    board = np.copy(board)
-    board[board==0] = 1
-    board = np.log2(board)
-    unique, count = np.unique(board, return_counts=True)
-    duplicate, duplicate_count = unique[count>1], count[count>1]
-    duplicate, duplicate_count = duplicate[duplicate>0], duplicate_count[duplicate>0]
-    duplicate = 1/duplicate
-    return duplicate.dot(duplicate_count)
+def mean_vertical_dif(board: np.ndarray):
+    return np.mean(np.diff(board, axis=0))
 
-def sum_vertical_dif(board: np.ndarray):
-    return np.sum(np.diff(board, axis=0))
-
-def sum_horizontal_dif(board: np.ndarray):
-    return np.sum(np.diff(board, axis=1))
+def mean_horizontal_dif(board: np.ndarray):
+    return np.mean(np.diff(board, axis=1))
 
 def std_vertical_dif(board: np.ndarray):
     return np.std(np.diff(board, axis=0))
 
 def std_horizontal_dif(board: np.ndarray):
     return np.std(np.diff(board, axis=1))
+
+def duplicates(board: np.ndarray):
+    matrix = np.copy(board)
+    matrix[matrix==0] = 1
+    matrix = np.log2(matrix)
+    unique, count = np.unique(board, return_counts=True)
+    duplicate, count = unique[count>1], count[count>1]-1
+    return duplicate.dot(count)
+
+def std_snake_dif(board: np.ndarray):
+    '''
+    Standard Deviation of differences in snaking sequence of tiles starting from top left to bottom left
+    '''
+    sequence = np.concatenate([board[0], board[1, ::-1], board[2], board[3, ::-1]])
+    return np.std(np.diff(sequence))
