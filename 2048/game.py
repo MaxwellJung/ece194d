@@ -1,5 +1,6 @@
 import numpy as np
 from environment import Environment
+import features
 
 class TwntyFrtyEight(Environment):
     WINNING_VALUE = 2048
@@ -223,75 +224,13 @@ class TwntyFrtyEight(Environment):
         '''
         board = TwntyFrtyEight.state_to_board(state)
         compressed_board, points = TwntyFrtyEight.move(board, action)
-        def mean(): return compressed_board.mean()
-        def std(): return compressed_board.std()
-        def emptiness(): return np.count_nonzero(compressed_board==0)
 
-        def distance_to_corner():
-            '''
-            Calculates manhattan distance of the largest tile to the nearest corner
-            '''
-            row_count, col_count = compressed_board.shape
-            corners = np.array([(0,0), (0, col_count-1), (row_count-1, 0), (row_count-1, col_count-1)])
-            max_pos = np.unravel_index(np.argmax(compressed_board), compressed_board.shape)
-            return np.min(np.linalg.norm(corners-max_pos, ord=1, axis=1))
-
-        def center_sum(): return np.sum(compressed_board[1:-1, 1:-1])
-        def perimeter_sum(): return np.sum(compressed_board)-center_sum()
-        
-        def tile_delta():
-            row_dif = np.sum(compressed_board[0:-1]-compressed_board[1:])
-            col_dif = np.sum(compressed_board[:, 0:-1]-compressed_board[:, 1:])
-            return np.min([row_dif, col_dif])
-        
-        def max_tile():
-            tile_value = np.max(compressed_board)
-            tile_value = 1 if tile_value == 0 else tile_value
-            return np.log2(tile_value)
-
-        S = np.array([emptiness(),
-                      points,
-                      tile_delta(),
-                      mean(),
-                      std(),
-                      distance_to_corner(),
-                      center_sum(),
-                      perimeter_sum(),
-                      max_tile()])
-        
-        def compute_fourier_basis(features: np.ndarray, n):
-            '''
-            Compute fourier basis of length (n+1)^k where k is the number of features
-            and n is the resolution of fourier series
-            '''
-            k = len(features)
-            fourier_basis = np.zeros((n+1)**k)
-            a = np.zeros((k, n+1)) + np.arange(n+1)
-            c = np.array(np.meshgrid(*a)).T.reshape(-1,k) #3 features
-            normalizedFeatures = features/np.linalg.norm(features)
-            fourier_basis = np.cos(np.pi*c.dot(normalizedFeatures))
-            return fourier_basis
-        
-        X = compute_fourier_basis(S, n=5)
-        
+        X = np.array([points,
+                      features.empty_tiles(compressed_board),
+                      features.roughness(compressed_board),
+                      features.monotonicity(compressed_board),
+                      features.max_tile(compressed_board),])
         return X
-        
-    @staticmethod
-    def get_all_next_states(state: int, action: int):
-        next_states = []
-        board = TwntyFrtyEight.state_to_board(state)
-        compressed_board, points = TwntyFrtyEight.move(board, action)
-        
-        if np.any(compressed_board != board):
-            for position in np.argwhere(compressed_board == 0):
-                position = tuple(position)
-                next_board = TwntyFrtyEight.add_two(compressed_board, position)
-                next_state = TwntyFrtyEight.board_to_state(next_board)
-                next_states.append(next_state)
-        else:
-            next_states.append(state)
-            
-        return np.array(next_states)
     
     @staticmethod
     def reward(current_state: int, current_action: int, next_state: int):
