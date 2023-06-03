@@ -57,6 +57,15 @@ def max_tile(board: np.ndarray):
     max_tile_value = np.max(board)
     return np.log2(max_tile_value) if max_tile_value > 0 else 0
 
+def tile_delta(board: np.ndarray):
+    '''
+    Find difference between tiles in horizontal and vertical direction
+    Return whichever has lower difference
+    '''
+    row_dif = np.sum(np.diff(board, axis=0))
+    col_dif = np.sum(np.diff(board, axis=1))
+    return np.sum([row_dif, col_dif])
+
 def distance_to_corner(board: np.ndarray):
     '''
     Calculates manhattan distance of the largest tile to the nearest corner
@@ -75,3 +84,15 @@ def duplicates(board: np.ndarray):
     duplicate, duplicate_count = duplicate[duplicate>0], duplicate_count[duplicate>0]
     duplicate = 1/duplicate
     return duplicate.dot(duplicate_count)
+
+def sum_vertical_dif(board: np.ndarray):
+    return np.sum(np.diff(board, axis=0))
+
+def sum_horizontal_dif(board: np.ndarray):
+    return np.sum(np.diff(board, axis=1))
+
+def std_vertical_dif(board: np.ndarray):
+    return np.std(np.diff(board, axis=0))
+
+def std_horizontal_dif(board: np.ndarray):
+    return np.std(np.diff(board, axis=1))

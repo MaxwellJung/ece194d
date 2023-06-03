@@ -225,11 +225,32 @@ class TwntyFrtyEight(Environment):
         board = TwntyFrtyEight.state_to_board(state)
         compressed_board, points = TwntyFrtyEight.move(board, action)
 
-        X = np.array([points,
+        S = np.array([
+                      points,
                       features.empty_tiles(compressed_board),
                       features.roughness(compressed_board),
                       features.monotonicity(compressed_board),
-                      features.max_tile(compressed_board),])
+                      features.sum_vertical_dif(compressed_board),
+                      features.sum_horizontal_dif(compressed_board),
+                      features.std_vertical_dif(compressed_board),
+                      features.std_horizontal_dif(compressed_board),
+                    ])
+        
+        def compute_fourier_basis(features: np.ndarray, n=2):
+            '''
+            Compute fourier basis of length (n+1)^k where k is the number of featuresnb
+            and n is the resolution of fourier series
+            '''
+            k = len(features)
+            fourier_basis = np.zeros((n+1)**k)
+            a = np.zeros((k, n+1)) + np.arange(n+1)
+            c = np.array(np.meshgrid(*a)).T.reshape(-1,k) #3 features
+            fourier_basis = np.cos(np.pi*c.dot(features))
+            return fourier_basis
+        
+        # X = compute_fourier_basis(S, n=5)
+        X = S 
+        
         return X
     
     @staticmethod
@@ -253,8 +274,14 @@ class TwntyFrtyEight(Environment):
             else:
                 # reward combining tiles
                 compressed_board, points = TwntyFrtyEight.move(current_board, current_action)
-                bonus = next_max if next_max > current_max else 0
-                penalty = np.count_nonzero(next_board!=current_board) if next_max > current_max else 0
+                
+                next_move_points = [TwntyFrtyEight.move(next_board, next_action)[1] for next_action in range(4)]
+                bonus = 0.9*max(next_move_points)
+                # penalize if chain length gets shorter
+                # penalty = 1 if features.monotonicity(next_board) < features.monotonicity(current_board) else 0
+                unique, count = np.unique(next_board, return_counts=True)
+                duplicate, count = unique[count>1], count[count>1]
+                penalty = duplicate.dot(count)/2
                 
                 r = points + bonus - penalty
                 return r
