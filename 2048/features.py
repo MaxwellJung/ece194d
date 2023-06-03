@@ -95,9 +95,21 @@ def duplicates(board: np.ndarray):
     duplicate, count = unique[count>1], count[count>1]-1
     return duplicate.dot(count)
 
-def std_snake_dif(board: np.ndarray):
+def snake_dif(board: np.ndarray):
     '''
     Standard Deviation of differences in snaking sequence of tiles starting from top left to bottom left
     '''
     sequence = np.concatenate([board[0], board[1, ::-1], board[2], board[3, ::-1]])
-    return np.std(np.diff(sequence))
+    return np.mean(np.diff(sequence))
+
+def snake1(board: np.ndarray):
+    return snake_dif(board)
+
+def snake2(board: np.ndarray):
+    return snake_dif(np.rot90(board))
+
+def snake3(board: np.ndarray):
+    return snake_dif(np.rot90(board, 2))
+
+def snake4(board: np.ndarray):
+    return snake_dif(np.rot90(board, 3))

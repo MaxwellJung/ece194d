@@ -234,8 +234,10 @@ class TwntyFrtyEight(Environment):
                       features.mean_horizontal_dif(compressed_board),
                       features.std_vertical_dif(compressed_board),
                       features.std_horizontal_dif(compressed_board),
-                      features.duplicates(compressed_board),
-                      features.std_snake_dif(compressed_board),
+                      features.snake1(compressed_board),
+                      features.snake2(compressed_board),
+                      features.snake3(compressed_board),
+                      features.snake4(compressed_board),
                     ])
         
         def compute_fourier_basis(features: np.ndarray, n=2):
