@@ -1,5 +1,6 @@
 import numpy as np
 from environment import Environment
+import features
 
 class TwntyFrtyEight(Environment):
     WINNING_VALUE = 2048
@@ -223,75 +224,40 @@ class TwntyFrtyEight(Environment):
         '''
         board = TwntyFrtyEight.state_to_board(state)
         compressed_board, points = TwntyFrtyEight.move(board, action)
-        def mean(): return compressed_board.mean()
-        def std(): return compressed_board.std()
-        def emptiness(): return np.count_nonzero(compressed_board==0)
 
-        def distance_to_corner():
-            '''
-            Calculates manhattan distance of the largest tile to the nearest corner
-            '''
-            row_count, col_count = compressed_board.shape
-            corners = np.array([(0,0), (0, col_count-1), (row_count-1, 0), (row_count-1, col_count-1)])
-            max_pos = np.unravel_index(np.argmax(compressed_board), compressed_board.shape)
-            return np.min(np.linalg.norm(corners-max_pos, ord=1, axis=1))
-
-        def center_sum(): return np.sum(compressed_board[1:-1, 1:-1])
-        def perimeter_sum(): return np.sum(compressed_board)-center_sum()
-        
-        def tile_delta():
-            row_dif = np.sum(compressed_board[0:-1]-compressed_board[1:])
-            col_dif = np.sum(compressed_board[:, 0:-1]-compressed_board[:, 1:])
-            return np.min([row_dif, col_dif])
-        
-        def max_tile():
-            tile_value = np.max(compressed_board)
-            tile_value = 1 if tile_value == 0 else tile_value
-            return np.log2(tile_value)
-
-        S = np.array([emptiness(),
+        S = np.array([
                       points,
-                      tile_delta(),
-                      mean(),
-                      std(),
-                      distance_to_corner(),
-                      center_sum(),
-                      perimeter_sum(),
-                      max_tile()])
+                      features.empty_tiles(compressed_board),
+                      features.roughness(compressed_board),
+                      features.monotonicity(compressed_board),
+                      features.std_vertical_dif(compressed_board),
+                      features.std_horizontal_dif(compressed_board),
+                      features.snake1(compressed_board),
+                      features.snake2(compressed_board),
+                      features.snake3(compressed_board),
+                      features.snake4(compressed_board),
+                      features.snake5(compressed_board),
+                      features.snake6(compressed_board),
+                      features.snake7(compressed_board),
+                      features.snake8(compressed_board),
+                    ])
         
-        def compute_fourier_basis(features: np.ndarray, n):
+        def compute_fourier_basis(features: np.ndarray, n=2):
             '''
             Compute fourier basis of length (n+1)^k where k is the number of features
-            and n is the resolution of fourier series
+            and n is the maximum frequency of fourier basis
             '''
             k = len(features)
             fourier_basis = np.zeros((n+1)**k)
             a = np.zeros((k, n+1)) + np.arange(n+1)
             c = np.array(np.meshgrid(*a)).T.reshape(-1,k) #3 features
-            normalizedFeatures = features/np.linalg.norm(features)
-            fourier_basis = np.cos(np.pi*c.dot(normalizedFeatures))
+            fourier_basis = np.cos(np.pi*c.dot(features))
             return fourier_basis
         
-        X = compute_fourier_basis(S, n=5)
+        # X = compute_fourier_basis(S, n=5)
+        X = S 
         
         return X
-        
-    @staticmethod
-    def get_all_next_states(state: int, action: int):
-        next_states = []
-        board = TwntyFrtyEight.state_to_board(state)
-        compressed_board, points = TwntyFrtyEight.move(board, action)
-        
-        if np.any(compressed_board != board):
-            for position in np.argwhere(compressed_board == 0):
-                position = tuple(position)
-                next_board = TwntyFrtyEight.add_two(compressed_board, position)
-                next_state = TwntyFrtyEight.board_to_state(next_board)
-                next_states.append(next_state)
-        else:
-            next_states.append(state)
-            
-        return np.array(next_states)
     
     @staticmethod
     def reward(current_state: int, current_action: int, next_state: int):
@@ -300,20 +266,24 @@ class TwntyFrtyEight(Environment):
         '''
         # reward winning
         if next_state == TwntyFrtyEight.WINNING_STATE:
-            return 0
+            return 1000
         
         if 0 <= next_state < TwntyFrtyEight.WINNING_STATE:
             current_board = TwntyFrtyEight.state_to_board(current_state)
+            current_max = np.max(current_board)
             next_board = TwntyFrtyEight.state_to_board(next_state)
+            next_max = np.max(next_board)
             # punish losing or choosing an action that does nothing
             if TwntyFrtyEight.get_board_status(next_board) == 'lose' or current_state == next_state:
-                return 0
-            # punish valid moves by -1
+                return -1000
             else:
                 # reward combining tiles
                 compressed_board, points = TwntyFrtyEight.move(current_board, current_action)
-                bonus = np.max(compressed_board) if np.max(compressed_board) > np.max(current_board) else 0
-                return points + bonus
+                space_made = next_max*(np.count_nonzero(next_board==0) - np.count_nonzero(current_board==0))
+                # mergeable_tiles_bonus = np.log2(next_max)*(np.count_nonzero(np.diff(next_board, axis=0)==0) + np.count_nonzero(np.diff(next_board, axis=1)==0))
+                # uniqueness_bonus = 100 if features.duplicates(next_board) < features.duplicates(current_board) else 0
+                r = points + space_made
+                return r
             
     @staticmethod
     def transition(state: int, action: int):

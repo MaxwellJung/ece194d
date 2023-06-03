@@ -15,7 +15,7 @@ def main():
         current_state = TwntyFrtyEight.board_to_state(game_grid.board)
         if TwntyFrtyEight.is_terminal_state(current_state):
             break
-        action = agent.softmax_policy(current_state)
+        action = agent.greedy_policy(current_state)
         
         game_grid.swipe(action)
         game_grid.update_idletasks()

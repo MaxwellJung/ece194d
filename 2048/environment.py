@@ -18,10 +18,6 @@ class Environment(ABC):
     
     @staticmethod
     @abstractmethod
-    def get_all_next_states(state: int, action: int): pass
-    
-    @staticmethod
-    @abstractmethod
     def reward(current_state: int, current_action: int, next_state: int): pass
     
     @staticmethod
