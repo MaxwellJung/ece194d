@@ -249,7 +249,7 @@ class TwntyFrtyEight(Environment):
             tile_value = 1 if tile_value == 0 else tile_value
             return np.log2(tile_value)
 
-        X = np.array([emptiness(),
+        S = np.array([emptiness(),
                       points,
                       tile_delta(),
                       mean(),
@@ -258,6 +258,22 @@ class TwntyFrtyEight(Environment):
                       center_sum(),
                       perimeter_sum(),
                       max_tile()])
+        
+        def compute_fourier_basis(features: np.ndarray, n):
+            '''
+            Compute fourier basis of length (n+1)^k where k is the number of features
+            and n is the resolution of fourier series
+            '''
+            k = len(features)
+            fourier_basis = np.zeros((n+1)**k)
+            a = np.zeros((k, n+1)) + np.arange(n+1)
+            c = np.array(np.meshgrid(*a)).T.reshape(-1,k) #3 features
+            normalizedFeatures = features/np.linalg.norm(features)
+            fourier_basis = np.cos(np.pi*c.dot(normalizedFeatures))
+            return fourier_basis
+        
+        X = compute_fourier_basis(S, n=5)
+        
         return X
         
     @staticmethod
