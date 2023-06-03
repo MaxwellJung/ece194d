@@ -75,12 +75,6 @@ def distance_to_corner(board: np.ndarray):
     max_pos = np.unravel_index(np.argmax(board), board.shape)
     return np.min(np.linalg.norm(corners-max_pos, ord=1, axis=1))
 
-def mean_vertical_dif(board: np.ndarray):
-    return np.mean(np.diff(board, axis=0))
-
-def mean_horizontal_dif(board: np.ndarray):
-    return np.mean(np.diff(board, axis=1))
-
 def std_vertical_dif(board: np.ndarray):
     return np.std(np.diff(board, axis=0))
 
@@ -100,7 +94,7 @@ def snake_dif(board: np.ndarray):
     Standard Deviation of differences in snaking sequence of tiles starting from top left to bottom left
     '''
     sequence = np.concatenate([board[0], board[1, ::-1], board[2], board[3, ::-1]])
-    return np.mean(np.diff(sequence))
+    return np.std(np.diff(sequence))
 
 def snake1(board: np.ndarray):
     return snake_dif(board)
@@ -113,3 +107,15 @@ def snake3(board: np.ndarray):
 
 def snake4(board: np.ndarray):
     return snake_dif(np.rot90(board, 3))
+
+def snake5(board: np.ndarray):
+    return snake_dif(board.T)
+
+def snake6(board: np.ndarray):
+    return snake_dif(np.rot90(board.T))
+
+def snake7(board: np.ndarray):
+    return snake_dif(np.rot90(board.T, 2))
+
+def snake8(board: np.ndarray):
+    return snake_dif(np.rot90(board.T, 3))

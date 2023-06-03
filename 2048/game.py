@@ -230,20 +230,22 @@ class TwntyFrtyEight(Environment):
                       features.empty_tiles(compressed_board),
                       features.roughness(compressed_board),
                       features.monotonicity(compressed_board),
-                      features.mean_vertical_dif(compressed_board),
-                      features.mean_horizontal_dif(compressed_board),
                       features.std_vertical_dif(compressed_board),
                       features.std_horizontal_dif(compressed_board),
                       features.snake1(compressed_board),
                       features.snake2(compressed_board),
                       features.snake3(compressed_board),
                       features.snake4(compressed_board),
+                      features.snake5(compressed_board),
+                      features.snake6(compressed_board),
+                      features.snake7(compressed_board),
+                      features.snake8(compressed_board),
                     ])
         
         def compute_fourier_basis(features: np.ndarray, n=2):
             '''
-            Compute fourier basis of length (n+1)^k where k is the number of featuresnb
-            and n is the resolution of fourier series
+            Compute fourier basis of length (n+1)^k where k is the number of features
+            and n is the maximum frequency of fourier basis
             '''
             k = len(features)
             fourier_basis = np.zeros((n+1)**k)
@@ -277,8 +279,10 @@ class TwntyFrtyEight(Environment):
             else:
                 # reward combining tiles
                 compressed_board, points = TwntyFrtyEight.move(current_board, current_action)
-                bonus = next_max*(np.count_nonzero(next_board==0) - np.count_nonzero(current_board==0))
-                r = points + bonus
+                space_made = next_max*(np.count_nonzero(next_board==0) - np.count_nonzero(current_board==0))
+                # mergeable_tiles_bonus = np.log2(next_max)*(np.count_nonzero(np.diff(next_board, axis=0)==0) + np.count_nonzero(np.diff(next_board, axis=1)==0))
+                # uniqueness_bonus = 100 if features.duplicates(next_board) < features.duplicates(current_board) else 0
+                r = points + space_made
                 return r
             
     @staticmethod
