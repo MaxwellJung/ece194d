@@ -7,7 +7,7 @@ def main():
     # g.play()
     
     agent = Agent(environ=g)
-    agent.w = np.load('w_star.npy')
+    # agent.w = np.load('w_star.npy')
     try:
         agent.find_optimal_weight(alpha=1e-11, tolerance=1e-20, alpha_decay=True)
     except KeyboardInterrupt:

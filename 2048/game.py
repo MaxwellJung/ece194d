@@ -266,13 +266,10 @@ class TwntyFrtyEight(Environment):
             '''
             k = len(features)
             fourier_basis = np.zeros((n+1)**k)
-            a = np.arange(n+1)
-            print("start")
-            c = np.array(np.meshgrid(a,a,a)).T.reshape((n+1)**k,3) #3 features
-            print(c)
-            print("\n")
-            normalizedFeatures = (features-np.min(features))/(np.max(features)-np.min(features))
-            fourier_basis = np.cos(np.pi*c*normalizedFeatures)
+            a = np.zeros((k, n+1)) + np.arange(n+1)
+            c = np.array(np.meshgrid(*a)).T.reshape(-1,k) #3 features
+            normalizedFeatures = features/np.linalg.norm(features)
+            fourier_basis = np.cos(np.pi*c.dot(normalizedFeatures))
             return fourier_basis
         
         X = compute_fourier_basis(S, n=5)
