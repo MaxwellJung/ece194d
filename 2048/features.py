@@ -1,18 +1,22 @@
 import numpy as np
 
 def mean(board: np.ndarray):
-    matrix = np.copy(board)
-    matrix[matrix==0] = 1
-    matrix = np.log2(matrix)
-    return matrix.mean()
+    return board.mean()
 
 def std(board: np.ndarray):
-    matrix = np.copy(board)
-    matrix[matrix==0] = 1
-    matrix = np.log2(matrix)
-    return matrix.std()
+    return board.std()
 
-def empty_tiles(board: np.ndarray): return np.count_nonzero(board==0)
+def center_sum(board: np.ndarray): 
+    return np.sum(board[1:-1, 1:-1])
+
+def perimeter_sum(board: np.ndarray): 
+    return np.sum(board)-center_sum(board)
+
+def emptiness(board: np.ndarray):
+    '''
+    1 is fully empty, 0 is full
+    '''
+    return np.count_nonzero(board==0)
 
 def roughness(board: np.ndarray):
     '''
@@ -64,7 +68,7 @@ def tile_delta(board: np.ndarray):
     '''
     row_dif = np.sum(np.diff(board, axis=0))
     col_dif = np.sum(np.diff(board, axis=1))
-    return np.sum([row_dif, col_dif])
+    return np.min([row_dif, col_dif])
 
 def distance_to_corner(board: np.ndarray):
     '''
@@ -82,12 +86,18 @@ def std_horizontal_dif(board: np.ndarray):
     return np.std(np.diff(board, axis=1))
 
 def duplicates(board: np.ndarray):
-    matrix = np.copy(board)
-    matrix[matrix==0] = 1
-    matrix = np.log2(matrix)
     unique, count = np.unique(board, return_counts=True)
     duplicate, count = unique[count>1], count[count>1]-1
-    return duplicate.dot(count)
+    return duplicate, count
+
+def count_changes(board1, board2):
+    return np.count_nonzero(board1!=board2)
+
+def count_mergeable(board):
+    vertical_dif = np.diff(board, axis=0)[(board[:-1]!=0) & (board[1:]!=0)]
+    horizontal_dif = np.diff(board, axis=1)[(board[:, :-1]!=0) & (board[:, 1:]!=0)]
+    neighbor_dif = np.concatenate([vertical_dif, horizontal_dif])
+    return np.count_nonzero(neighbor_dif==0)
 
 def snake_dif(board: np.ndarray):
     '''

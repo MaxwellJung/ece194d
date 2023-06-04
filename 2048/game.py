@@ -224,24 +224,30 @@ class TwntyFrtyEight(Environment):
         '''
         board = TwntyFrtyEight.state_to_board(state)
         compressed_board, points = TwntyFrtyEight.move(board, action)
+        
+        matrix = np.copy(compressed_board)
+        matrix[matrix==0] = 1
+        matrix = np.log2(matrix)
+        duplicate_tiles, count = features.duplicates(matrix)
 
         S = np.array([
-                      points,
-                      features.empty_tiles(compressed_board),
-                      features.roughness(compressed_board),
-                      features.monotonicity(compressed_board),
-                      features.std_vertical_dif(compressed_board),
-                      features.std_horizontal_dif(compressed_board),
-                      features.snake1(compressed_board),
-                      features.snake2(compressed_board),
-                      features.snake3(compressed_board),
-                      features.snake4(compressed_board),
-                      features.snake5(compressed_board),
-                      features.snake6(compressed_board),
-                      features.snake7(compressed_board),
-                      features.snake8(compressed_board),
+                        points,
+                        features.emptiness(compressed_board),
+                        features.roughness(compressed_board),
+                        features.monotonicity(compressed_board),
+                        features.std_vertical_dif(compressed_board),
+                        features.std_horizontal_dif(compressed_board),
+                    #   features.count_changes(board, compressed_board),
+                    #   np.sum(count[duplicate_tiles>0])
+                        features.tile_delta(compressed_board),
+                        features.mean(compressed_board),
+                        features.std(compressed_board),
+                        features.distance_to_corner(compressed_board),
+                        features.center_sum(compressed_board),
+                        features.perimeter_sum(compressed_board),
+                        features.max_tile(compressed_board),
                     ])
-        
+                            
         def compute_fourier_basis(features: np.ndarray, n=2):
             '''
             Compute fourier basis of length (n+1)^k where k is the number of features
@@ -250,12 +256,14 @@ class TwntyFrtyEight(Environment):
             k = len(features)
             fourier_basis = np.zeros((n+1)**k)
             a = np.zeros((k, n+1)) + np.arange(n+1)
-            c = np.array(np.meshgrid(*a)).T.reshape(-1,k) #3 features
+            c = np.array(np.meshgrid(*a)).T.reshape(-1,k)
             fourier_basis = np.cos(np.pi*c.dot(features))
             return fourier_basis
         
+        # print(S)
         # X = compute_fourier_basis(S, n=5)
-        X = S 
+        X = S
+        # print(X)
         
         return X
     
@@ -266,7 +274,7 @@ class TwntyFrtyEight(Environment):
         '''
         # reward winning
         if next_state == TwntyFrtyEight.WINNING_STATE:
-            return 1000
+            return 1
         
         if 0 <= next_state < TwntyFrtyEight.WINNING_STATE:
             current_board = TwntyFrtyEight.state_to_board(current_state)
@@ -275,15 +283,23 @@ class TwntyFrtyEight(Environment):
             next_max = np.max(next_board)
             # punish losing or choosing an action that does nothing
             if TwntyFrtyEight.get_board_status(next_board) == 'lose' or current_state == next_state:
-                return -1000
+                return -1
             else:
                 # reward combining tiles
-                compressed_board, points = TwntyFrtyEight.move(current_board, current_action)
-                space_made = next_max*(np.count_nonzero(next_board==0) - np.count_nonzero(current_board==0))
+                # compressed_board, points = TwntyFrtyEight.move(current_board, current_action)
+                space_made = np.count_nonzero(next_board==0) - np.count_nonzero(current_board==0)
+                adjacency_bonus = 1 if features.count_mergeable(next_board) > features.count_mergeable(current_board) else 0
                 # mergeable_tiles_bonus = np.log2(next_max)*(np.count_nonzero(np.diff(next_board, axis=0)==0) + np.count_nonzero(np.diff(next_board, axis=1)==0))
                 # uniqueness_bonus = 100 if features.duplicates(next_board) < features.duplicates(current_board) else 0
-                r = points + space_made
-                return r
+                # bonus = next_max if features.monotonicity(next_board) > features.monotonicity(current_board) else 0
+                # reward = next_max*space_made + 4*adjacency_bonus
+                new_max_bonus = next_max if next_max > current_max else 0
+                reward = new_max_bonus + adjacency_bonus
+                # print(current_board)
+                # print(next_board)
+                # print(reward)
+                # print('----------------')
+                return reward
             
     @staticmethod
     def transition(state: int, action: int):

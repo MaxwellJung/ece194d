@@ -46,18 +46,22 @@ class Agent:
             logging.info(f'{sorted_stats} win_rate={stats[2048]/episode_count:.2%} average_steps={update_count/episode_count:.2f}')
         stats = defaultdict(int)
         
-        # initialize
-        policy = self.softmax_policy
         
         update_count = 0
         episode_count = 0
         while True:
             episode_count += 1
             last_w = np.copy(self.w)
-            learning_rate = alpha/(update_count+1) if alpha_decay else alpha
+            
+            # initialize policy and learning rate for this episode
+            # policy = lambda s: self.epsilon_greedy_policy(s, epsilon=1/episode_count)
+            policy = self.softmax_policy
+            
             S = self.environ.get_initial_state()
             A = policy(S)
             while True:
+                # set learning rate
+                learning_rate = alpha/(update_count+1) if alpha_decay else alpha
                 S_prime = self.environ.transition(S, A)
                 R = self.environ.reward(S, A, S_prime)
                 grad = self.environ.get_feature_vector(S, A)
