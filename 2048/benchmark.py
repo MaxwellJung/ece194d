@@ -33,7 +33,7 @@ def main():
     # plt.show()
     
     try: df = pd.read_csv('benchmark.csv')
-    except FileNotFoundError: df = generate_data(sample_size=10)
+    except FileNotFoundError: df = generate_data(sample_size=1000)
     ax = df.groupby(by='highest_tile').count().plot(kind='bar')
     for container in ax.containers:
         ax.bar_label(container)
