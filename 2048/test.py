@@ -10,7 +10,7 @@ def main():
     game_grid = GameGrid(game)
     agent = Agent(game)
     agent.w = np.load('w_star.npy')
-    
+        
     while True:
         current_state = TwntyFrtyEight.board_to_state(game_grid.board)
         if TwntyFrtyEight.is_terminal_state(current_state):
