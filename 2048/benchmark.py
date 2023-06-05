@@ -37,7 +37,7 @@ def main():
     except FileNotFoundError: df2 = generate_data(sample_size=1000)
     
     plt.figure()
-    ax = df2['highest_tile'].value_counts().plot(kind='bar')
+    ax = df2['highest_tile'].value_counts().sort_index().plot(kind='bar')
     for container in ax.containers:
         ax.bar_label(container)
     
