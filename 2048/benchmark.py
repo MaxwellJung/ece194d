@@ -28,16 +28,21 @@ def main():
                        'weights': agent.w}).set_index('features')
     df = df.iloc[::-1]
     df['positive'] = df['weights'] > 0
+    
+    plt.figure()
     df['weights'].plot(kind='barh',
                        color=df.positive.map({True: 'b', False: 'r'}))
-    # plt.show()
     
-    try: df = pd.read_csv('benchmark.csv')
-    except FileNotFoundError: df = generate_data(sample_size=1000)
-    ax = df.groupby(by='highest_tile').count().plot(kind='bar')
+    try: df2 = pd.read_csv('benchmark.csv')
+    except FileNotFoundError: df2 = generate_data(sample_size=1000)
+    
+    plt.figure()
+    ax = df2['highest_tile'].value_counts().plot(kind='bar')
     for container in ax.containers:
         ax.bar_label(container)
-        ax.yaxis.set_major_formatter(mtick.PercentFormatter())
+    
+    df2.hist(column='score', grid=False, bins=100)
+    
     plt.show()
     
 def get_results(i):
