@@ -33,7 +33,7 @@ class Agent:
         self.q = ActionValue(environ)
         # Initialize weight to 0 vector
         self.w = np.zeros(len(self.environ.get_feature_vector(0, 0)))
-        self.training_df: pd.DataFrame = pd.DataFrame(columns=['episode_id', 'moves', 'highest_tile'])
+        self.training_df: pd.DataFrame = pd.DataFrame(columns=['episode_id', 'moves', 'highest_tile', 'update_count'])
     
     def find_optimal_weight(self, alpha, discount_factor=1, tolerance=1e-3, alpha_decay=True):
         '''
@@ -43,7 +43,6 @@ class Agent:
         def show_progress():
             logging.info(self.w)
             logging.info(final_board)
-            logging.info(f'{episode_count=} {update_count=}')
             logging.info(self.training_df.tail())
         
         
@@ -81,7 +80,7 @@ class Agent:
             final_board = TwntyFrtyEight.state_to_board(S_prime)
             highest_tile = np.max(final_board)
             self.training_df = pd.concat([self.training_df,
-                                          pd.DataFrame([[episode_count, total_moves, highest_tile]], columns=self.training_df.columns)], 
+                                          pd.DataFrame([[episode_count, total_moves, highest_tile, update_count]], columns=self.training_df.columns)], 
                                          ignore_index=True)
             
             # Print progress every 100 episodes
