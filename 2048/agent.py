@@ -1,6 +1,7 @@
 import logging
 from collections import defaultdict
 import numpy as np
+import pandas as pd
 from scipy.special import softmax
 from environment import Environment
 from game import TwntyFrtyEight
@@ -32,6 +33,7 @@ class Agent:
         self.q = ActionValue(environ)
         # Initialize weight to 0 vector
         self.w = np.zeros(len(self.environ.get_feature_vector(0, 0)))
+        self.training_df: pd.DataFrame = pd.DataFrame(columns=['episode_id', 'moves', 'highest_tile'])
     
     def find_optimal_weight(self, alpha, discount_factor=1, tolerance=1e-3, alpha_decay=True):
         '''
@@ -40,17 +42,16 @@ class Agent:
         '''
         def show_progress():
             logging.info(self.w)
-            sorted_stats = {k: v for k, v in sorted(stats.items(), key=lambda item: item[1], reverse=True)}
-            logging.info(TwntyFrtyEight.state_to_board(S_prime))
+            logging.info(final_board)
             logging.info(f'{episode_count=} {update_count=}')
-            logging.info(f'{sorted_stats} win_rate={stats[2048]/episode_count:.2%} average_steps={update_count/episode_count:.2f}')
-        stats = defaultdict(int)
+            logging.info(self.training_df.tail())
         
         
         update_count = 0
         episode_count = 0
         while True:
             episode_count += 1
+            total_moves = 0
             last_w = np.copy(self.w)
             
             # initialize policy and learning rate for this episode
@@ -63,6 +64,7 @@ class Agent:
                 # set learning rate
                 learning_rate = alpha/(update_count+1) if alpha_decay else alpha
                 S_prime = self.environ.transition(S, A)
+                total_moves += 1
                 R = self.environ.reward(S, A, S_prime)
                 grad = self.environ.get_feature_vector(S, A)
                 if self.environ.is_terminal_state(S_prime):
@@ -76,7 +78,11 @@ class Agent:
                 A = A_prime
             
             # Record episode stats
-            stats[self.environ.get_state_status(S_prime)] += 1
+            final_board = TwntyFrtyEight.state_to_board(S_prime)
+            highest_tile = np.max(final_board)
+            self.training_df = pd.concat([self.training_df,
+                                          pd.DataFrame([[episode_count, total_moves, highest_tile]], columns=self.training_df.columns)], 
+                                         ignore_index=True)
             
             # Print progress every 100 episodes
             if episode_count%10 == 0: show_progress()
