@@ -29,7 +29,6 @@ def main():
     df = df.iloc[::-1]
     df['positive'] = df['weights'] > 0
     
-    plt.figure()
     df['weights'].plot(kind='barh',
                        color=df.positive.map({True: 'b', False: 'r'}))
     
@@ -41,11 +40,14 @@ def main():
     for container in ax.containers:
         ax.bar_label(container)
     
-    plt.figure()
     df2.hist(column='score', grid=False, bins=100)
     
-    plt.figure()
-    df2.hist(column='total moves', grid=False, bins=100)
+    try: df3 = pd.read_csv('training_results.csv')
+    except FileNotFoundError: print(f'Please run train.py to generate training results')
+    
+    df3.plot.line(x='episode_id', y='moves')
+    
+    df3.plot.line(x='episode_id', y='highest_tile')
     
     plt.show()
     
