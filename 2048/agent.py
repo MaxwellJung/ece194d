@@ -35,7 +35,7 @@ class Agent:
         self.w = np.zeros(len(self.environ.get_feature_vector(0, 0)))
         self.training_df: pd.DataFrame = pd.DataFrame(columns=['episode_id', 'moves', 'highest_tile', 'update_count'])
     
-    def find_optimal_weight(self, alpha, discount_factor=1, tolerance=1e-3, alpha_decay=True):
+    def find_optimal_weight(self, alpha, discount_factor=1, tolerance=1e-3, alpha_decay=True, progress_update_period=10):
         '''
         Episodic Semi-gradient Sarsa for Estimating q_hat = q_star
         algorithm from page 244 of Sutton Barto 2nd edition
@@ -44,6 +44,7 @@ class Agent:
             logging.info(self.w)
             logging.info(final_board)
             logging.info(self.training_df.tail())
+            logging.info(f'average moves: {self.training_df["moves"].tail(n=progress_update_period).mean()}')
         
         
         update_count = 0
@@ -83,8 +84,8 @@ class Agent:
                                           pd.DataFrame([[episode_count, total_moves, highest_tile, update_count]], columns=self.training_df.columns)], 
                                          ignore_index=True)
             
-            # Print progress every 100 episodes
-            if episode_count%10 == 0: show_progress()
+            # Print progress every 10 episodes
+            if episode_count%progress_update_period == 0: show_progress()
             if np.linalg.norm(last_w-self.w) < tolerance: break
             
         logging.info(f'------------------------Final convergence------------------------')
