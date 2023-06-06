@@ -45,6 +45,7 @@ class Agent:
             logging.info(final_board)
             logging.info(self.training_df.tail())
             logging.info(f'average moves: {self.training_df["moves"].tail(n=progress_update_period).mean()}')
+            logging.info(f'highest tile: {self.training_df["highest_tile"].value_counts().to_dict()}')
         
         
         update_count = 0
