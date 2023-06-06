@@ -29,7 +29,6 @@ def main():
     df = df.iloc[::-1]
     df['positive'] = df['weights'] > 0
     
-    plt.figure()
     df['weights'].plot(kind='barh',
                        color=df.positive.map({True: 'b', False: 'r'}))
     
@@ -43,17 +42,26 @@ def main():
     
     df2.hist(column='score', grid=False, bins=100)
     
+    try: df3 = pd.read_csv('training_results.csv')
+    except FileNotFoundError: print(f'Please run train.py to generate training results')
+    
+    df3.plot.line(x='episode_id', y='moves')
+    
+    df3.plot.line(x='episode_id', y='highest_tile')
+    
     plt.show()
     
 def get_results(i):
     board = game.new_board(row_count=4, col_count=4) # create new game
     S = game.board_to_state(board)
     score = 0
+    total_moves = 0
     while True:
         direction = agent.greedy_policy(S)
         # transition the board to next state
         # done flag is used to check if the direction is a valid move
         board, points = game.move(board, direction)
+        total_moves += 1
         score += points
         # add new tile of value 2 to random position on the board
         board = game.add_two(board)
@@ -61,16 +69,13 @@ def get_results(i):
         if game.is_terminal_state(S):
             break
     
-    return np.max(board), score
+    return np.max(board), score, total_moves
 
 def generate_data(sample_size=1000):    
-    data = {'highest_tile': [],
-            'score': []}
-    
     with Pool() as pool:
         data = pool.map(get_results, range(sample_size))
     
-    df = pd.DataFrame(data, columns=['highest_tile', 'score'])
+    df = pd.DataFrame(data, columns=['highest_tile', 'score', 'total moves'])
     df.to_csv('benchmark.csv', index=False)
         
     return df

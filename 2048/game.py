@@ -76,11 +76,6 @@ class TwntyFrtyEight(Environment):
         return 'lose'
     
     @staticmethod
-    def get_state_status(state: int):
-        board = TwntyFrtyEight.state_to_board(state)
-        return np.max(board)
-    
-    @staticmethod
     def get_valid_actions(state: int):
         board = TwntyFrtyEight.state_to_board(state)
         all_actions = range(4)
