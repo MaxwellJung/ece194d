@@ -42,6 +42,8 @@ def main():
     
     df2.hist(column='score', grid=False, bins=100)
     
+    df2.hist(column='total_moves', grid=False, bins=100)
+    
     try: df3 = pd.read_csv('training_results.csv')
     except FileNotFoundError: print(f'Please run train.py to generate training results')
     
@@ -71,11 +73,14 @@ def get_results(i):
     
     return np.max(board), score, total_moves
 
-def generate_data(sample_size=1000):    
+def generate_data(sample_size=1000):
+    '''
+    Use all CPU cores to run multiple simulations in parallel for faster data generation
+    '''
     with Pool() as pool:
         data = pool.map(get_results, range(sample_size))
     
-    df = pd.DataFrame(data, columns=['highest_tile', 'score', 'total moves'])
+    df = pd.DataFrame(data, columns=['highest_tile', 'score', 'total_moves'])
     df.to_csv('benchmark.csv', index=False)
         
     return df
