@@ -47,6 +47,7 @@ FONT = ("Verdana",40,"bold")
 
 KEY_QUIT = "Escape"
 KEY_BACK = "b"
+KEY_PAUSE = 'space'
 
 KEY_UP = "Up"
 KEY_DOWN = "Down"

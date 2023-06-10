@@ -12,15 +12,16 @@ def main():
     agent.w = np.load('w_star.npy')
         
     while True:
-        current_state = TwntyFrtyEight.board_to_state(game_grid.board)
-        if TwntyFrtyEight.is_terminal_state(current_state):
-            break
-        action = agent.greedy_policy(current_state)
-        
-        game_grid.swipe(action)
+        if not game_grid.paused:
+            current_state = TwntyFrtyEight.board_to_state(game_grid.board)
+            if TwntyFrtyEight.is_terminal_state(current_state):
+                break
+            action = agent.greedy_policy(current_state)
+            
+            game_grid.swipe(action)
+            time.sleep(0.2)
         game_grid.update_idletasks()
         game_grid.update()
-        time.sleep(0.2)
         
     game_grid.mainloop()
 
@@ -29,6 +30,7 @@ class GameGrid(Frame):
         Frame.__init__(self)
         
         self.game = game
+        self.paused = True
 
         self.grid()
         self.master.title('2048')
@@ -112,6 +114,7 @@ class GameGrid(Frame):
         key = event.keysym
         print(event)
         if key == c.KEY_QUIT: exit()
+        if key == c.KEY_PAUSE: self.paused = not self.paused
         if key == c.KEY_BACK and len(self.board_history) > 1:
             self.board = self.board_history.pop()
             self.update_grid_cells()
